@@ -1,0 +1,48 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Executables
+*.exe
+*.out
+*.app
+*.pdb
+*.exe.config
+
+# Log files
+*.tlog
+
+# Visual Studio Code related files.
+**/.vscode/
+
+# IntelliJ related files.
+*.iml
+**/.idea/
+
+# Visual C++ cache files
+*.vsidx
+.vs/
+ipch/
+*.aps
+*.ncb
+*.opensdf
+*.sdf
+*.cachefile
