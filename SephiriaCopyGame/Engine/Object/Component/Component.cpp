@@ -17,7 +17,7 @@ void Component::CopyFrom(const IPrototypeable* source)
     if (sourceComp)
     {
         m_bisEnabled = sourceComp->m_bisEnabled;
-        // owner는 복사 X (새로운 GameObject에 넣어야 함)
+        // owner는 복사 X (새로 만든 GameObject에 넣어야 함)
     }
 }
 
@@ -27,11 +27,11 @@ void Component::Init()
 {
 }
 
-void Component::Update()
+void Component::Update(float deltaTime)
 {
 }
 
-void Component::LateUpdate()
+void Component::LateUpdate(float deltaTime)
 {
 }
 

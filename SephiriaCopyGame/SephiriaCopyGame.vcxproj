@@ -146,6 +146,8 @@
     <ClInclude Include="Engine\Managers\InputManager\InputManager.h" />
     <ClInclude Include="Engine\Object\IPrototypeable\IPrototypeable.h" />
     <ClInclude Include="Engine\Object\Object\Object.h" />
+    <ClInclude Include="Source\Class\Player\PlayerMovement.h" />
+    <ClInclude Include="Source\Scene\GameScene.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Engine\Managers\PrototypeManager\PrototypeFactory\PrototypeFactory.h" />
     <ClInclude Include="Resource.h" />
@@ -171,6 +173,8 @@
     <ClCompile Include="Engine\Managers\InputManager\InputManager.cpp" />
     <ClCompile Include="Engine\Object\IPrototypeable\IPrototypeable.cpp" />
     <ClCompile Include="Engine\Object\Object\Object.cpp" />
+    <ClCompile Include="Source\Class\Player\PlayerMovement.cpp" />
+    <ClCompile Include="Source\Scene\GameScene.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

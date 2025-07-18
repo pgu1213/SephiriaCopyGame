@@ -12,9 +12,10 @@ public:
     explicit Object(const string& name) : m_Name(name), m_Tag(""), m_bisActive(true), m_pParent(nullptr) {}
     Object(const Object& other);
 public:
-    void Update();
-    void LateUpdate();
+    void Update(float DeltaTime);
+    void LateUpdate(float DeltaTime);
     void Render();
+	void GetTransform(Transform& outTransform) const { outTransform = m_Transform; }
 public:
     unique_ptr<IPrototypeable> Clone() const override; // 프로토타입 패턴 구현
     void CopyFrom(const IPrototypeable* source) override;

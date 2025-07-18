@@ -12,7 +12,7 @@ Object::Object(const Object& other)
     CloneChildren(other);
 }
 
-void Object::Update()
+void Object::Update(float DeltaTime)
 {
     if (!m_bisActive) return;
 
@@ -31,29 +31,29 @@ void Object::Update()
     for (auto& component : m_Components)
     {
         if (component->IsEnabled())
-            component->Update();
+            component->Update(DeltaTime);
     }
 
     // 자식 오브젝트 업데이트
     for (auto* child : m_Children)
     {
-        child->Update();
+        child->Update(DeltaTime);
     }
 }
 
-void Object::LateUpdate()
+void Object::LateUpdate(float DeltaTime)
 {
     if (!m_bisActive) return;
 
     for (auto& component : m_Components)
     {
         if (component->IsEnabled())
-            component->LateUpdate();
+            component->LateUpdate(DeltaTime);
     }
 
     for (auto* child : m_Children)
     {
-        child->LateUpdate();
+        child->LateUpdate(DeltaTime);
     }
 }
 

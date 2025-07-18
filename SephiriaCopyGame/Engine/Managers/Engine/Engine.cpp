@@ -3,6 +3,7 @@
 #include <Engine/Managers/TimeManager/TimeManager.h>
 #include <Engine/Managers/InputManager/InputManager.h>
 #include <Engine/Managers/ResourceManager/ResourceManager.h>
+#include <Engine/Managers/MainManager/MainManager.h>
 
 
 Engine::Engine()
@@ -55,10 +56,10 @@ void Engine::Update()
 
 	InputManager::GetInstance()->Update();
 
-	//MainManager::GetInstance()->Update(DeltaTime); // 게임 매니저 업데이트
+	MainManager::GetInstance()->Update(DeltaTime); // 실제 매니저 업데이트
 }
 
 void Engine::Render(HDC hdc)
 {
-	//MainManager::GetInstance()->Render(hdc); // 게임 매니저 렌더링
+	MainManager::GetInstance()->Render(hdc); // 게임 매니저 렌더링
 }

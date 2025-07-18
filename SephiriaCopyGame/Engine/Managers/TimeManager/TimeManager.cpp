@@ -49,9 +49,7 @@ void TimeManager::Update()
 
 float TimeManager::GetDeltaTime()
 {
-
-
-    return m_CurrentDeltaTime;
+    return static_cast<float>(m_CurrentDeltaTime);
 }
 
 float TimeManager::GetTotalTime()

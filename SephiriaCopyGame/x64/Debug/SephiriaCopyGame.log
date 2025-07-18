@@ -1,2 +1,13 @@
-﻿  Scene.cpp
+﻿  CircleCollider.cpp
+  BoxCollider.cpp
+  Collider.cpp
+  PrototypeManager.cpp
+  Component.cpp
+  Object.cpp
+  PlayerMovement.cpp
+  GameScene.cpp
+  SpriteRenderer.cpp
+  PrototypeFactory.cpp
+  Scene.cpp
+  코드를 생성하고 있습니다...
   SephiriaCopyGame.vcxproj -> C:\Dev\SephiriaCopyGame\x64\Debug\SephiriaCopyGame.exe
