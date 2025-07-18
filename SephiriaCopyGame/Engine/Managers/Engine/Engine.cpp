@@ -35,7 +35,7 @@ void Engine::Init()
 		return;
 	}*/
 
-	//MainManager::GetInstance()->Init();
+	MainManager::GetInstance()->Init();
 
 	printf("Engine Init Complete\n");
 }

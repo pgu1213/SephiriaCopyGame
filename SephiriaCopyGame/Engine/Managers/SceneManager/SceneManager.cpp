@@ -19,6 +19,8 @@ void SceneManager::Init()
 
 	// 기본 씬을 GameScene으로 설정
 	SceneLoad("GameScene");
+
+	printf("SceneManager Init Complete\n");
 }
 
 void SceneManager::Update(float DeltaTime)
@@ -31,15 +33,16 @@ void SceneManager::Update(float DeltaTime)
 
 bool SceneManager::SceneLoad(const string& sceneName)
 {
-	// 해당 이름의 씬이 존재하는지 확인
+	// 이름의 씬이 존재하는지 확인
 	auto it = m_Scenes.find(sceneName);
 	if (it == m_Scenes.end())
 	{
-		// 씬이 존재하지 않음
+		// 이름의 씬이 없으면
+		MessageBoxA(nullptr, ("Scene '" + sceneName + "' not found!").c_str(), "Error", MB_OK | MB_ICONERROR);
 		return false;
 	}
 
-	// 현재 씬이 있다면 정리
+	// 현재 진행중인 씬이 있다면 정리
 	if (m_CurrentScene && m_CurrentSceneName != sceneName)
 	{
 		ClearCurrentScene();
@@ -60,6 +63,7 @@ void SceneManager::RegisterScene(const string& sceneName, unique_ptr<Scene> scen
 	}
 }
 
+// 현재 씬 정리
 void SceneManager::ClearCurrentScene()
 {
 	if (m_CurrentScene)

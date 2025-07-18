@@ -48,14 +48,14 @@ void Scene::Clear()
 
 void Scene::ProcessPendingObjects()
 {
-    // 추가 대기 중인 오브젝트들 처리
+    // 동적 추가 시 대기 중인 오브젝트 처리
     while (!m_ObjectsToAdd.empty())
     {
         m_GameObjects.push_back(move(m_ObjectsToAdd.front()));
         m_ObjectsToAdd.pop();
     }
 
-    // 삭제 대기 중인 오브젝트들 처리
+    // 동적 삭제 대기 중인 오브젝트들 처리
     for (Object* objToDestroy : m_ObjectsToDestroy)
     {
         m_GameObjects.erase(

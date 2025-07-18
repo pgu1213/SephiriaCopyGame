@@ -11,7 +11,7 @@ public:
 	virtual ~SceneManager();
 public:
 	void Init();
-	void Update();
+	void Update(float DeltaTime);
 	bool SceneLoad(const string& sceneName);
 	void RegisterScene(const string& sceneName, unique_ptr<Scene> scene);
 	Scene* GetCurrentScene() const { return m_CurrentScene; }
