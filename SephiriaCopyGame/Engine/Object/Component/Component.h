@@ -23,6 +23,7 @@ public:
     void CopyFrom(const IPrototypeable* source) override;
     void SetOwner(Object* newOwner);
     bool IsEnabled() const { return m_bisEnabled; }
+    Object* GetOwner() const { return m_pOwner; }
 protected:
     Object* m_pOwner;
     bool m_bisEnabled;
