@@ -3,7 +3,7 @@
 struct Vector2
 {
 public:
-	Vector2(float x, float y) : x(x), y(y) {}
+	Vector2(float x, float y) : x(0.f), y(0.f) {}
 public:
 	float x;
 	float y;

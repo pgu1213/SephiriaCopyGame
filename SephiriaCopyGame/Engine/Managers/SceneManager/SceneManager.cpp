@@ -20,7 +20,7 @@ void SceneManager::Init()
 	RegisterScene("GameScene", make_unique<GameScene>());
 
 	// 기본 씬을 GameScene으로 설정
-	SceneLoad("TitleScene");
+	SceneLoad("GameScene");
 
 	printf("SceneManager Init Complete\n");
 }
