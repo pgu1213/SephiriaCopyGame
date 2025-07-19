@@ -201,30 +201,51 @@ void TileMapEditor::DrawTile(HDC hdc, int gridX, int gridY, const TileData& tile
     POINT screenPos = GridToScreen(gridX, gridY, camera);
     int tileSize = static_cast<int>(TILE_SIZE * camera->GetZoom());
 
-    // 타일 타입에 따른 색상 지정 (스프라이트가 없을 때의 대체)
-    COLORREF tileColor;
-    switch (tile.type)
+    // 먼저 실제 스프라이트 그리기 시도
+    ResourceManager* resourceManager = ResourceManager::GetInstance();
+    vector<wstring> tileFileNames = resourceManager->GetTileFileNames();
+
+    bool spriteDrawn = false;
+    if (tile.spriteIndex >= 0 && tile.spriteIndex < static_cast<int>(tileFileNames.size()))
     {
-    case TileType::FLOOR: tileColor = RGB(200, 200, 200); break;
-    case TileType::WALL: tileColor = RGB(100, 50, 50); break;
-    case TileType::CLIFF: tileColor = RGB(50, 50, 50); break;
-    case TileType::MONSTER_SPAWN: tileColor = RGB(255, 100, 100); break;
-    case TileType::MONSTER_MOVE: tileColor = RGB(100, 255, 100); break;
-    case TileType::DOOR_NORTH:
-    case TileType::DOOR_SOUTH:
-    case TileType::DOOR_EAST:
-    case TileType::DOOR_WEST: tileColor = RGB(100, 100, 255); break;
-    default: tileColor = RGB(255, 255, 255); break;
+        Gdiplus::Bitmap* bitmap = resourceManager->GetTileBitmap(tileFileNames[tile.spriteIndex]);
+        if (bitmap)
+        {
+            resourceManager->DrawBitmapSection(hdc, bitmap,
+                screenPos.x, screenPos.y, tileSize, tileSize,
+                0, 0, min(TILE_SIZE, static_cast<int>(bitmap->GetWidth())),
+                min(TILE_SIZE, static_cast<int>(bitmap->GetHeight())));
+            spriteDrawn = true;
+        }
     }
 
-    HBRUSH tileBrush = CreateSolidBrush(tileColor);
-    HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, tileBrush);
+    // 스프라이트가 없거나 로드 실패시 색상으로 대체
+    if (!spriteDrawn)
+    {
+        COLORREF tileColor;
+        switch (tile.type)
+        {
+        case TileType::FLOOR: tileColor = RGB(200, 200, 200); break;
+        case TileType::WALL: tileColor = RGB(100, 50, 50); break;
+        case TileType::CLIFF: tileColor = RGB(50, 50, 50); break;
+        case TileType::MONSTER_SPAWN: tileColor = RGB(255, 100, 100); break;
+        case TileType::MONSTER_MOVE: tileColor = RGB(100, 255, 100); break;
+        case TileType::DOOR_NORTH:
+        case TileType::DOOR_SOUTH:
+        case TileType::DOOR_EAST:
+        case TileType::DOOR_WEST: tileColor = RGB(100, 100, 255); break;
+        default: tileColor = RGB(255, 255, 255); break;
+        }
 
-    Rectangle(hdc, screenPos.x, screenPos.y,
-        screenPos.x + tileSize, screenPos.y + tileSize);
+        HBRUSH tileBrush = CreateSolidBrush(tileColor);
+        HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, tileBrush);
 
-    SelectObject(hdc, oldBrush);
-    DeleteObject(tileBrush);
+        Rectangle(hdc, screenPos.x, screenPos.y,
+            screenPos.x + tileSize, screenPos.y + tileSize);
+
+        SelectObject(hdc, oldBrush);
+        DeleteObject(tileBrush);
+    }
 
     // 타일 속성 텍스트 표시
     if (m_ShowTileProperties && tileSize > 10)

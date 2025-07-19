@@ -27,22 +27,18 @@ void Camera::Update()
     if (inputManager->IsKeyPressed(VK_LEFT))
     {
         m_X -= CAMERA_SPEED * 0.016f; // 대략 60FPS 기준
-        printf("Camera moved left to (%.2f, %.2f)\n", m_X, m_Y);
     }
     if (inputManager->IsKeyPressed(VK_RIGHT))
     {
         m_X += CAMERA_SPEED * 0.016f;
-        printf("Camera moved right to (%.2f, %.2f)\n", m_X, m_Y);
     }
     if (inputManager->IsKeyPressed(VK_UP))
     {
         m_Y -= CAMERA_SPEED * 0.016f;
-        printf("Camera moved up to (%.2f, %.2f)\n", m_X, m_Y);
     }
     if (inputManager->IsKeyPressed(VK_DOWN))
     {
         m_Y += CAMERA_SPEED * 0.016f;
-        printf("Camera moved down to (%.2f, %.2f)\n", m_X, m_Y);
     }
 
     // 줌 기능 (Page Up/Down)
@@ -50,13 +46,11 @@ void Camera::Update()
     {
         m_Zoom += ZOOM_SPEED * 0.1f;
         if (m_Zoom > 3.0f) m_Zoom = 3.0f;
-        printf("Zoom in: %.2f\n", m_Zoom);
     }
     if (inputManager->IsKeyDown(VK_NEXT)) // Page Down
     {
         m_Zoom -= ZOOM_SPEED * 0.1f;
         if (m_Zoom < 0.2f) m_Zoom = 0.2f;
-        printf("Zoom out: %.2f\n", m_Zoom);
     }
 
     // 카메라 리셋 (Home 키)

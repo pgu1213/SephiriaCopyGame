@@ -51,6 +51,8 @@ private:
     void DrawTileGrid(HDC hdc);
     void DrawSelectedHighlight(HDC hdc);
     void DrawPageInfo(HDC hdc);
+    void DrawPageButtons(HDC hdc, int totalPages);
+    bool CheckPageButtons(int mouseX, int mouseY);
 
     // ÁÂÇ¥ º¯È¯
     int GetTileIndexFromPosition(int x, int y);

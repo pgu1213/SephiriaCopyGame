@@ -48,6 +48,12 @@ void TilePalette::HandleInput()
         // 클릭으로 타일 선택
         if (input->IsKeyDown(VK_LBUTTON))
         {
+            // 페이지 버튼 체크
+            if (CheckPageButtons(mousePos.x, mousePos.y))
+            {
+                return; // 페이지 버튼을 눌렀으면 타일 선택 안함
+            }
+
             int tileIndex = GetTileIndexFromPosition(mousePos.x, mousePos.y);
             if (tileIndex >= 0)
             {
@@ -55,46 +61,29 @@ void TilePalette::HandleInput()
             }
         }
     }
+}
 
-    // 페이지 변경 (Page Up/Down 키)
-    if (input->IsKeyDown(VK_PRIOR)) // Page Up
+bool TilePalette::CheckPageButtons(int mouseX, int mouseY)
+{
+    // 이전 페이지 버튼 (< 버튼)
+    RECT prevButtonRect = { m_PosX + 5, m_PosY + m_Height - 40, m_PosX + 35, m_PosY + m_Height - 20 };
+    if (mouseX >= prevButtonRect.left && mouseX <= prevButtonRect.right &&
+        mouseY >= prevButtonRect.top && mouseY <= prevButtonRect.bottom)
     {
         PrevPage();
-    }
-    if (input->IsKeyDown(VK_NEXT)) // Page Down
-    {
-        NextPage();
+        return true;
     }
 
-    // 키보드로 타일 선택 (화살표 키)
-    if (input->IsKeyDown(VK_LEFT))
+    // 다음 페이지 버튼 (> 버튼)
+    RECT nextButtonRect = { m_PosX + m_Width - 35, m_PosY + m_Height - 40, m_PosX + m_Width - 5, m_PosY + m_Height - 20 };
+    if (mouseX >= nextButtonRect.left && mouseX <= nextButtonRect.right &&
+        mouseY >= nextButtonRect.top && mouseY <= nextButtonRect.bottom)
     {
-        if (m_SelectedTileIndex > 0)
-        {
-            SelectTile(m_SelectedTileIndex - 1);
-        }
+        NextPage();
+        return true;
     }
-    if (input->IsKeyDown(VK_RIGHT))
-    {
-        if (m_SelectedTileIndex < static_cast<int>(m_TileFileNames.size()) - 1)
-        {
-            SelectTile(m_SelectedTileIndex + 1);
-        }
-    }
-    if (input->IsKeyDown(VK_UP))
-    {
-        if (m_SelectedTileIndex >= TILES_PER_ROW)
-        {
-            SelectTile(m_SelectedTileIndex - TILES_PER_ROW);
-        }
-    }
-    if (input->IsKeyDown(VK_DOWN))
-    {
-        if (m_SelectedTileIndex + TILES_PER_ROW < static_cast<int>(m_TileFileNames.size()))
-        {
-            SelectTile(m_SelectedTileIndex + TILES_PER_ROW);
-        }
-    }
+
+    return false;
 }
 
 void TilePalette::Render(HDC hdc)
@@ -214,6 +203,9 @@ void TilePalette::DrawPageInfo(HDC hdc)
     sprintf_s(pageText, "Page %d/%d", m_CurrentPage + 1, max(1, totalPages));
     TextOutA(hdc, m_PosX + 5, m_PosY + 5, pageText, strlen(pageText));
 
+    // 페이지 버튼들 그리기
+    DrawPageButtons(hdc, totalPages);
+
     // 선택된 타일 정보
     if (m_SelectedTileIndex >= 0 && m_SelectedTileIndex < static_cast<int>(m_TileFileNames.size()))
     {
@@ -223,8 +215,37 @@ void TilePalette::DrawPageInfo(HDC hdc)
 
         char selectedText[128];
         sprintf_s(selectedText, "Selected: %s", fileNameA.c_str());
-        TextOutA(hdc, m_PosX + 5, m_PosY + m_Height - 20, selectedText, strlen(selectedText));
+        TextOutA(hdc, m_PosX + 5, m_PosY + m_Height - 60, selectedText, strlen(selectedText));
     }
+}
+
+void TilePalette::DrawPageButtons(HDC hdc, int totalPages)
+{
+    // 이전 페이지 버튼
+    RECT prevButtonRect = { m_PosX + 5, m_PosY + m_Height - 40, m_PosX + 35, m_PosY + m_Height - 20 };
+    HBRUSH buttonBrush = CreateSolidBrush(m_CurrentPage > 0 ? RGB(100, 100, 100) : RGB(60, 60, 60));
+    HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, buttonBrush);
+
+    Rectangle(hdc, prevButtonRect.left, prevButtonRect.top, prevButtonRect.right, prevButtonRect.bottom);
+
+    SetTextColor(hdc, RGB(255, 255, 255));
+    SetBkMode(hdc, TRANSPARENT);
+    TextOutA(hdc, prevButtonRect.left + 8, prevButtonRect.top + 2, "<", 1);
+
+    SelectObject(hdc, oldBrush);
+    DeleteObject(buttonBrush);
+
+    // 다음 페이지 버튼
+    RECT nextButtonRect = { m_PosX + m_Width - 35, m_PosY + m_Height - 40, m_PosX + m_Width - 5, m_PosY + m_Height - 20 };
+    buttonBrush = CreateSolidBrush(m_CurrentPage < totalPages - 1 ? RGB(100, 100, 100) : RGB(60, 60, 60));
+    oldBrush = (HBRUSH)SelectObject(hdc, buttonBrush);
+
+    Rectangle(hdc, nextButtonRect.left, nextButtonRect.top, nextButtonRect.right, nextButtonRect.bottom);
+
+    TextOutA(hdc, nextButtonRect.left + 8, nextButtonRect.top + 2, ">", 1);
+
+    SelectObject(hdc, oldBrush);
+    DeleteObject(buttonBrush);
 }
 
 void TilePalette::SelectTile(int index)
