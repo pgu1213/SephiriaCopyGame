@@ -2,6 +2,7 @@
 #include "TitleScene.h"
 #include <Engine/Managers/UIManager/UIManager.h>
 #include <Engine/Object/Component/SpriteRenderer/SpriteRenderer.h>
+#include <Engine/Object/Component/Animation/Animation.h>
 #include <Engine/Object/UI/Button/UIButton.h>
 #include <Engine/Object/Component/Camera/Camera.h>
 #include <Engine/Managers/SceneManager/SceneManager.h>
@@ -21,7 +22,15 @@ void TitleScene::Init()
     // 예시: 배경 오브젝트 생성
     Object* background = CreateGameObject("Background");
     background->AddComponent<SpriteRenderer>();
-    
+    background->AddComponent<Animation>();
+
+    vector<wstring> walkFrames = { L"Player_Basic_Move_Lower00", L"Player_Basic_Move_Lower00", L"Player_Basic_Move_Lower00", L"Player_Basic_Move_Lower00" };
+	background->GetComponent<Animation>()->AddAnimationClip(L"Back", walkFrames, 0.1f, true);
+
+    // 애니메이션 재생
+    background->GetComponent<Animation>()->PlayAnimation(L"Back");
+
+
 
     // 카메라 설정
     auto cameraObject = make_unique<Object>("MainCamera");
