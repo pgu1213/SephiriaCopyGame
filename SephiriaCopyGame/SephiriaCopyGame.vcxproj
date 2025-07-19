@@ -106,9 +106,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PrecompiledHeaderFile>
-      </PrecompiledHeaderFile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>../Header;$(SolutionDir)\SephiriaCopyGame;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -141,7 +140,6 @@
     <ClInclude Include="Engine\Managers\PrototypeManager\PrototypeManager.h" />
     <ClInclude Include="Engine\Object\Component\Component.h" />
     <ClInclude Include="Engine\Managers\Engine\Engine.h" />
-    <ClInclude Include="Engine\Managers\CollisionManager\CollisionManager.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Engine\Managers\MainManager\MainManager.h" />
     <ClInclude Include="Engine\Managers\InputManager\InputManager.h" />
@@ -170,7 +168,6 @@
     <ClCompile Include="Engine\Managers\PrototypeManager\PrototypeManager.cpp" />
     <ClCompile Include="Engine\Object\Component\Component.cpp" />
     <ClCompile Include="Engine\Managers\Engine\Engine.cpp" />
-    <ClCompile Include="Engine\Managers\CollisionManager\CollisionManager.cpp" />
     <ClCompile Include="Engine\Managers\MainManager\MainManager.cpp" />
     <ClCompile Include="Engine\Managers\InputManager\InputManager.cpp" />
     <ClCompile Include="Engine\Object\IPrototypeable\IPrototypeable.cpp" />

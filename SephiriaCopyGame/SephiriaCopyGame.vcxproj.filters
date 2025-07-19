@@ -48,9 +48,6 @@
     <ClInclude Include="Engine\Managers\ResourceManager\ResourceManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Managers\CollisionManager\CollisionManager.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Managers\Engine\Engine.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -117,9 +114,6 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Managers\ResourceManager\ResourceManager.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Managers\CollisionManager\CollisionManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Managers\Engine\Engine.cpp">

@@ -1,4 +1,4 @@
-#include "../../../pch.h"
+#include "pch.h"
 #include "TimeManager.h"
 
 LARGE_INTEGER TimeManager::m_PreviousCounter = { 0 };
