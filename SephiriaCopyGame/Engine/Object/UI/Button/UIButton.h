@@ -23,7 +23,7 @@ public:
     void CopyFrom(const IPrototypeable* source) override;
 
 public:
-    // 렌더링
+	void Update(float deltaTime) override;
     void Render(HDC hdc) override;
 
     // 텍스트 설정

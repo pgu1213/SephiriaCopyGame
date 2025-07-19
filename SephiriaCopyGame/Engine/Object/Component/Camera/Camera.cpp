@@ -96,7 +96,6 @@ void Camera::Update(float deltaTime)
 
 void Camera::Render(HDC hdc)
 {
-    // 카메라 자체는 렌더링할 것이 없음
 }
 
 void Camera::SetPosition(float x, float y)

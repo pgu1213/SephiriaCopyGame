@@ -62,6 +62,23 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         {
             // 게임 루프
 			Engine::GetInstance()->Update();
+
+            HDC hdc = GetDC(g_hWnd);
+            RECT clientRect;
+            GetClientRect(g_hWnd, &clientRect);
+
+            HDC memDC = CreateCompatibleDC(hdc);
+            HBITMAP memBitmap = CreateCompatibleBitmap(hdc, clientRect.right, clientRect.bottom);
+            HBITMAP oldBitmap = (HBITMAP)SelectObject(memDC, memBitmap);
+
+            Engine::GetInstance()->Render(memDC);
+
+            BitBlt(hdc, 0, 0, clientRect.right, clientRect.bottom, memDC, 0, 0, SRCCOPY);
+
+            SelectObject(memDC, oldBitmap);
+            DeleteObject(memBitmap);
+            DeleteDC(memDC);
+            ReleaseDC(g_hWnd, hdc);
         }
     }
 }
@@ -98,12 +115,12 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
 
-   RECT rc = { 0,0,600,800 };
+   RECT rc = { 0,0,WINCX,WINCY };
 
    AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
 
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+      CW_USEDEFAULT, 0, rc.right - rc.left, rc.bottom - rc.top, 0, nullptr, nullptr, hInstance, nullptr);
 
    if (!hWnd)
    {

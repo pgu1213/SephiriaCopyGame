@@ -1,4 +1,5 @@
 #include <pch.h>
+#include <Engine/Managers/InputManager/InputManager.h>
 #include "UIButton.h"
 
 UIButton::UIButton()
@@ -99,6 +100,26 @@ void UIButton::CopyFrom(const IPrototypeable* source)
         }
 
         UICreateFont();
+    }
+}
+
+void UIButton::Update(float deltaTime)
+{
+    if (m_IsPressed)
+    {
+        m_CurrentState = ButtonState::Pressed;
+    }
+    else if (m_IsHovered)
+    {
+        m_CurrentState = ButtonState::Hovered;
+    }
+    else if (!m_Enabled)
+    {
+        m_CurrentState = ButtonState::Disabled;
+    }
+    else
+    {
+        m_CurrentState = ButtonState::Normal;
     }
 }
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#define WINCX 800
-#define WINCY 600
+#define WINCX 1920
+#define WINCY 1080
 #define PI 3.14159265
 #define GRAVITY 9.8f
 
