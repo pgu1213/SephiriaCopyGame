@@ -35,7 +35,7 @@ void Component::LateUpdate(float deltaTime)
 {
 }
 
-void Component::Render()
+void Component::Render(HDC hdc)
 {
 }
 

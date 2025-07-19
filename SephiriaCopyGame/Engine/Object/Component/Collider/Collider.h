@@ -20,7 +20,7 @@ class Collider : public Component
 {
 public:
     Collider(Object* owner);
-    virtual ~Collider() = default;
+    virtual ~Collider();
 
 public:
     // 순수 가상 함수들
@@ -30,6 +30,7 @@ public:
 
     // 충돌 검사 (자동으로 모든 콜라이더와 체크)
 	virtual void Update(float DeltaTime) override;
+	virtual void Render(HDC hdc) override;
 
     // 이벤트 콜백 설정
     void SetOnCollisionEnter(const CollisionCallback& callback) { m_OnCollisionEnter = callback; }
@@ -75,10 +76,13 @@ protected:
 
 private:
     void ProcessCollisionEvents();
+    void RenderDebugInfo(HDC hdc);
     void CheckCollisionWithAll();
 
     // 모든 활성 콜라이더들을 추적하는 정적 리스트
     static vector<Collider*> s_AllColliders;
+
+    bool m_ShowDebug;
 
 public:
     // 정적 함수들

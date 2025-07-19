@@ -33,11 +33,13 @@ Rect CircleCollider::GetBounds()
 
 Vector2 CircleCollider::GetCenter()
 {
-    if (m_Owner && m_Owner->GetTransform())
+    if (m_Owner)
     {
+        Transform transform;
+        m_Owner->GetTransform(transform);
         return Vector2(
-            m_Owner->GetTransform()->position.x + m_Offset.x,
-            m_Owner->GetTransform()->position.y + m_Offset.y
+            transform.position.x + m_Offset.x,
+            transform.position.y + m_Offset.y
         );
     }
     return m_Offset;
@@ -47,12 +49,16 @@ bool CircleCollider::CheckCollisionWithCircle(CircleCollider* other)
 {
     Vector2 myCenter = GetCenter();
     Vector2 otherCenter = other->GetCenter();
-    return CollisionUtils::CheckCircleCircle(myCenter, m_Radius, otherCenter, other->GetRadius());
+
+    float dx = myCenter.x - otherCenter.x;
+    float dy = myCenter.y - otherCenter.y;
+    float distance = sqrt(dx * dx + dy * dy);
+
+    return distance < (m_Radius + other->GetRadius());
 }
 
 bool CircleCollider::CheckCollisionWithBox(BoxCollider* other)
 {
-    Rect boxBounds = other->GetBounds();
-    Vector2 myCenter = GetCenter();
-    return CollisionUtils::CheckAABBCircle(boxBounds, myCenter, m_Radius);
+    // BoxCollider의 함수를 재사용
+    return other->CheckCollisionWithCircle(this);
 }

@@ -22,4 +22,5 @@ public:
 
 private:
     float m_Radius;
+    Object* m_Owner;
 };

@@ -2,20 +2,37 @@
 #include <functional>
 #include "Collider.h"
 
-Collider::Collider(Object* owner)
+vector<Collider*> Collider::s_AllColliders;
+
+Collider::Collider(Object* owner) 
     : Component(owner)
     , m_Offset(0, 0)
     , m_IsTrigger(false)
-    , m_Enabled(true)
     , m_Layer(CollisionLayer::None)
     , m_LayerMask(CollisionLayer::All)
+    , m_ShowDebug(false)
 {
     RegisterCollider(this);
 }
 
+Collider::~Collider()
+{
+    UnregisterCollider(this);
+
+    // 다른 콜라이더들의 충돌 목록에서 자신을 제거
+    for (Collider* other : s_AllColliders)
+    {
+        if (other != this)
+        {
+            other->m_PreviousCollisions.erase(this);
+            other->m_CurrentCollisions.erase(this);
+        }
+    }
+}
+
 void Collider::Update(float DeltaTime)
 {
-    if (!m_Enabled) return;
+    if (!IsEnabled()) return;
 
     // 이전 프레임의 충돌 정보를 저장
     m_PreviousCollisions = m_CurrentCollisions;
@@ -26,6 +43,14 @@ void Collider::Update(float DeltaTime)
 
     // 이벤트 처리
     ProcessCollisionEvents();
+}
+
+void Collider::Render(HDC hdc)  // override 키워드는 헤더에만
+{
+    if (m_ShowDebug)
+    {
+        RenderDebugInfo(hdc);
+    }
 }
 
 void Collider::CheckCollisionWithAll()
@@ -50,9 +75,9 @@ void Collider::ProcessCollisionEvents()
         if (m_PreviousCollisions.find(collider) == m_PreviousCollisions.end())
         {
             // 새로운 충돌
-            if (m_IsTrigger && m_OnTriggerEnter)
+            if (m_IsTrigger)
                 m_OnTriggerEnter(collider);
-            else if (!m_IsTrigger && m_OnCollisionEnter)
+            else
                 m_OnCollisionEnter(collider);
         }
     }
@@ -63,9 +88,9 @@ void Collider::ProcessCollisionEvents()
         if (m_PreviousCollisions.find(collider) != m_PreviousCollisions.end())
         {
             // 지속 중인 충돌
-            if (m_IsTrigger && m_OnTriggerStay)
+            if (m_IsTrigger)
                 m_OnTriggerStay(collider);
-            else if (!m_IsTrigger && m_OnCollisionStay)
+            else
                 m_OnCollisionStay(collider);
         }
     }
@@ -76,12 +101,53 @@ void Collider::ProcessCollisionEvents()
         if (m_CurrentCollisions.find(collider) == m_CurrentCollisions.end())
         {
             // 충돌 끝남
-            if (m_IsTrigger && m_OnTriggerExit)
+            if (m_IsTrigger)
                 m_OnTriggerExit(collider);
-            else if (!m_IsTrigger && m_OnCollisionExit)
+            else
                 m_OnCollisionExit(collider);
         }
     }
+}
+
+void Collider::RenderDebugInfo(HDC hdc)
+{
+    Rect bounds = GetBounds();
+
+    // 기본 콜라이더 경계 (빨간색)
+    HPEN pen = CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
+    HPEN oldPen = (HPEN)SelectObject(hdc, pen);
+    HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
+
+    Rectangle(hdc, bounds.X, bounds.Y,
+        bounds.X + bounds.Width, bounds.Y + bounds.Height);
+
+    // 충돌 중인 경우 초록색으로 표시
+    if (!m_CurrentCollisions.empty())
+    {
+        HPEN collisionPen = CreatePen(PS_SOLID, 3, RGB(0, 255, 0));
+        SelectObject(hdc, collisionPen);
+
+        Rectangle(hdc, bounds.X - 2, bounds.Y - 2,
+            bounds.X + bounds.Width + 2, bounds.Y + bounds.Height + 2);
+
+        DeleteObject(collisionPen);
+    }
+
+    // 트리거인 경우 파란색 점선으로 표시
+    if (m_IsTrigger)
+    {
+        HPEN triggerPen = CreatePen(PS_DASH, 1, RGB(0, 0, 255));
+        SelectObject(hdc, triggerPen);
+
+        Rectangle(hdc, bounds.X, bounds.Y,
+            bounds.X + bounds.Width, bounds.Y + bounds.Height);
+
+        DeleteObject(triggerPen);
+    }
+
+    SelectObject(hdc, oldPen);
+    SelectObject(hdc, oldBrush);
+    DeleteObject(pen);
 }
 
 bool Collider::CanCollideWith(CollisionLayer otherLayer) const

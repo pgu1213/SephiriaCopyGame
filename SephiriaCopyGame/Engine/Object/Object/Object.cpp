@@ -57,19 +57,19 @@ void Object::LateUpdate(float DeltaTime)
     }
 }
 
-void Object::Render()
+void Object::Render(HDC hdc)
 {
     if (!m_bisActive) return;
 
     for (auto& component : m_Components)
     {
         if (component->IsEnabled())
-            component->Render();
+            component->Render(hdc);
     }
 
     for (auto* child : m_Children)
     {
-        child->Render();
+        child->Render(hdc);
     }
 }
 

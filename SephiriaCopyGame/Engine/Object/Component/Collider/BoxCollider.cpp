@@ -33,11 +33,13 @@ Rect BoxCollider::GetBounds()
 
 Vector2 BoxCollider::GetCenter()
 {
-    if (m_Owner && m_Owner->GetTransform())
+    if (m_Owner)
     {
+        Transform transform;
+        m_Owner->GetTransform(transform);
         return Vector2(
-            m_Owner->GetTransform()->position.x + m_Offset.x,
-            m_Owner->GetTransform()->position.y + m_Offset.y
+            transform.position.x + m_Offset.x,
+            transform.position.y + m_Offset.y
         );
     }
     return m_Offset;
@@ -47,7 +49,11 @@ bool BoxCollider::CheckCollisionWithBox(BoxCollider* other)
 {
     Rect myBounds = GetBounds();
     Rect otherBounds = other->GetBounds();
-    return CollisionUtils::CheckAABB(myBounds, otherBounds);
+
+    return !(myBounds.X + myBounds.Width < otherBounds.X ||
+        otherBounds.X + otherBounds.Width < myBounds.X ||
+        myBounds.Y + myBounds.Height < otherBounds.Y ||
+        otherBounds.Y + otherBounds.Height < myBounds.Y);
 }
 
 bool BoxCollider::CheckCollisionWithCircle(CircleCollider* other)
@@ -55,5 +61,17 @@ bool BoxCollider::CheckCollisionWithCircle(CircleCollider* other)
     Rect myBounds = GetBounds();
     Vector2 circleCenter = other->GetCenter();
     float radius = other->GetRadius();
-    return CollisionUtils::CheckAABBCircle(myBounds, circleCenter, radius);
+
+    // 박스에서 원의 중심에 가장 가까운 점 찾기
+    float closestX = max(static_cast<float>(myBounds.X),
+        min(circleCenter.x, static_cast<float>(myBounds.X + myBounds.Width)));
+    float closestY = max(static_cast<float>(myBounds.Y),
+        min(circleCenter.y, static_cast<float>(myBounds.Y + myBounds.Height)));
+
+    // 그 점과 원의 중심 사이의 거리 계산
+    float dx = circleCenter.x - closestX;
+    float dy = circleCenter.y - closestY;
+    float distance = sqrt(dx * dx + dy * dy);
+
+    return distance < radius;
 }

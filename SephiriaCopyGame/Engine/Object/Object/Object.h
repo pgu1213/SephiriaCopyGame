@@ -14,7 +14,7 @@ public:
 public:
     void Update(float DeltaTime);
     void LateUpdate(float DeltaTime);
-    void Render();
+    void Render(HDC hdc);
 	void GetTransform(Transform& outTransform) const { outTransform = m_Transform; }
 public:
     unique_ptr<IPrototypeable> Clone() const override; // 프로토타입 패턴 구현
