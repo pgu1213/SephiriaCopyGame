@@ -2,8 +2,8 @@
 //
 
 #include "pch.h"
-#include "framework.h"
 #include "Editor.h"
+#include "Editor/MainEditor.h"
 
 #define MAX_LOADSTRING 100
 
@@ -45,8 +45,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     MSG msg;
     msg.message = WM_NULL;
 
-    /*Engine::GetInstance()->Init();
-    Engine::GetInstance()->LateInit();*/
+    MainEditor mainEditor;
+
+	mainEditor.Initialize();
 
     while (msg.message != WM_QUIT)
     {
@@ -60,8 +61,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
         else
         {
-            // 게임 루프
-            //Engine::GetInstance()->Update();
+			mainEditor.Update();
+			mainEditor.Render();
         }
     }
 }

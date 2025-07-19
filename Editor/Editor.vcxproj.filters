@@ -57,6 +57,9 @@
     <ClInclude Include="Editor\TilePalette\TilePalette.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="Editor\PropPalette\PropPalette.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Editor.cpp">
@@ -87,6 +90,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Editor\TilePalette\TilePalette.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\PropPalette\PropPalette.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

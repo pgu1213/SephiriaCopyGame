@@ -9,6 +9,9 @@ public:
 	void Update();
 	float GetX() const;
 	float GetY() const;
+	float GetZoom() const;
+	POINT WorldToScreen(float worldX, float worldY) const;
+	void ScreenToWorld(int screenX, int screenY, float& worldX, float& worldY) const;
 	private:
 	float m_X;
 	float m_Y;

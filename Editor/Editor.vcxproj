@@ -109,6 +109,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>../Header;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -142,6 +143,7 @@
     <ClInclude Include="Managers\InputManager\InputManager.h" />
     <ClInclude Include="Managers\SingletonManager\SingletonManager.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Editor\PropPalette\PropPalette.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Managers\ResourceManager\ResourceManager.h" />
     <ClInclude Include="targetver.h" />
@@ -164,6 +166,7 @@
     <ClCompile Include="Editor\TileMapEditor\TileMapEditor.cpp" />
     <ClCompile Include="Managers\ResourceManager\ResourceManager.cpp" />
     <ClCompile Include="Editor\TilePalette\TilePalette.cpp" />
+    <ClCompile Include="Editor\PropPalette\PropPalette.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Editor.rc" />
