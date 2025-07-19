@@ -11,6 +11,8 @@
 
 #include <iostream>
 #pragma comment(linker, "/entry:wWinMainCRTStartup /subsystem:console")
+#pragma comment(lib, "Gdiplus.lib")
+#pragma comment(lib, "fmod_vc.lib")
 
 #include <string>
 #include <vector>
@@ -24,7 +26,6 @@
 
 #include <ole2.h>
 #include <gdiplus.h>
-#pragma comment(lib, "Gdiplus.lib")
 
 using namespace std;
 using namespace Gdiplus;
@@ -37,7 +38,5 @@ using namespace Gdiplus;
 
 #include "../ThirdParty/fmod.h"
 #include "../ThirdParty/fmod.hpp"
-
-#pragma comment(lib, "fmod_vc.lib")
 
 #endif //PCH_H

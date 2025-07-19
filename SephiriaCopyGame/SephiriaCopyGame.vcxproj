@@ -161,6 +161,7 @@
     <ClInclude Include="Engine\Scene\Scene.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Engine\Managers\TimeManager\TimeManager.h" />
+    <ClInclude Include="Source\Scene\TitleScene.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine\Object\Component\Collider\CircleCollider.cpp" />
@@ -190,6 +191,7 @@
     <ClCompile Include="Engine\Object\Component\SpriteRenderer\SpriteRenderer.cpp" />
     <ClCompile Include="Engine\Managers\PrototypeManager\PrototypeFactory\PrototypeFactory.cpp" />
     <ClCompile Include="Engine\Scene\Scene.cpp" />
+    <ClCompile Include="Source\Scene\TitleScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="SephiriaCopyGame.rc" />
