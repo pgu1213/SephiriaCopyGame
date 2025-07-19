@@ -133,16 +133,26 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Managers\ConfigManager\ConfigManager.h" />
+    <ClInclude Include="Editor\Camera\Camera.h" />
     <ClInclude Include="Editor.h" />
+    <ClInclude Include="Managers\FileManager\FileManager.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="Editor\MainEditor.h" />
     <ClInclude Include="Managers\InputManager\InputManager.h" />
     <ClInclude Include="Managers\SingletonManager\SingletonManager.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="Managers\ResourceManager\ResourceManager.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="Editor\TileMapEditor\TileMapEditor.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Managers\ConfigManager\ConfigManager.cpp" />
+    <ClCompile Include="Editor\Camera\Camera.cpp" />
     <ClCompile Include="Editor.cpp" />
+    <ClCompile Include="Editor\MainEditor.cpp" />
+    <ClCompile Include="Managers\FileManager\FileManager.cpp" />
     <ClCompile Include="Managers\InputManager\InputManager.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -150,6 +160,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Editor\TileMapEditor\TileMapEditor.cpp" />
+    <ClCompile Include="Managers\ResourceManager\ResourceManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Editor.rc" />

@@ -9,7 +9,6 @@ private:
 public:
     virtual ~InputManager();
 public:
-    void Init();
     void Update();
     bool IsKeyPressed(int key);
     bool IsKeyDown(int key);
