@@ -32,6 +32,18 @@ void Scene::Update(float DeltaTime)
     }
 }
 
+void Scene::Render(HDC hdc)
+{
+    // 모든 게임 오브젝트 업데이트
+    for (auto& obj : m_GameObjects)
+    {
+        if (obj)
+        {
+            obj->Render(hdc);
+        }
+    }
+}
+
 void Scene::Clear()
 {
     // 모든 오브젝트 제거

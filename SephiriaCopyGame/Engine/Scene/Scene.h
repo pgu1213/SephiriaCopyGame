@@ -14,6 +14,7 @@ public:
     Object* CreateGameObject(const string& name = "GameObject");
     void DestroyGameObject(Object* obj);
     void Update(float DeltaTime);
+    void Render(HDC hdc);
     void Clear(); // 모든 오브젝트 정리
 
 private:

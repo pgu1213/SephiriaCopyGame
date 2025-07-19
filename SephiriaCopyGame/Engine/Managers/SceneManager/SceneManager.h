@@ -12,6 +12,7 @@ public:
 public:
 	void Init();
 	void Update(float DeltaTime);
+	void Render(HDC hdc);
 	bool SceneLoad(const string& sceneName);
 	void RegisterScene(const string& sceneName, unique_ptr<Scene> scene);
 	Scene* GetCurrentScene() const { return m_CurrentScene; }

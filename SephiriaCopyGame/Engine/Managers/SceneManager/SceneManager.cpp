@@ -33,6 +33,14 @@ void SceneManager::Update(float DeltaTime)
 	}
 }
 
+void SceneManager::Render(HDC hdc)
+{
+	if (m_CurrentScene)
+	{
+		m_CurrentScene->Render(hdc);
+	}
+}
+
 bool SceneManager::SceneLoad(const string& sceneName)
 {
 	// 이름의 씬이 존재하는지 확인

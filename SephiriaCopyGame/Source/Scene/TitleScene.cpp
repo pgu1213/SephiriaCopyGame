@@ -22,7 +22,6 @@ void TitleScene::Init()
     Object* background = CreateGameObject("Background");
     background->AddComponent<SpriteRenderer>();
     
-    
 
     // 카메라 설정
     auto cameraObject = make_unique<Object>("MainCamera");
@@ -62,7 +61,7 @@ void TitleScene::SetupUI()
     auto startButton = make_shared<UIButton>();
     startButton->SetText(L"게임 시작");
     startButton->SetPosition(-100.0f, -25.0f); // 중앙에서 왼쪽으로 100, 위로 25
-    startButton->SetSize(200.0f, 50.0f);
+    startButton->SetSize(500.0f, 500.0f);
     startButton->SetAnchor(UIAnchor::Center); // 화면 중앙 기준
     startButton->SetFont(L"맑은 고딕", 18, true);
 
@@ -73,7 +72,8 @@ void TitleScene::SetupUI()
     startButton->SetTextColor(RGB(0, 0, 0));
 
     // 클릭 이벤트 설정
-    startButton->SetClickCallback([]() {
+    startButton->SetClickCallback([]() 
+        {
         // 게임 시작 로직
         SceneManager::GetInstance()->SceneLoad("GameScene");
         });
