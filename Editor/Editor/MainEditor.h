@@ -18,6 +18,9 @@ public:
 	void ChangeGridSize();
 	void ChangeRoomType();
 	void TogglePropMode();
+	void ShowMapFileList();
+	void CleanupOldFiles();
+	void ValidateCurrentMap();
 	void PrintControls();
 private:
 	HDC m_hDC;

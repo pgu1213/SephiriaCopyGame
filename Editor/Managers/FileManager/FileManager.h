@@ -1,21 +1,41 @@
 #pragma once
 #include "../SingletonManager/SingletonManager.h"
-#include "../ConfigManager/ConfigManager.h"
-#include "../../Editor/TileMapEditor/TileMapEditor.h"
+#include <fstream>
+#include <sstream>
+#include <filesystem>
 
-class TileMapEditor;
-
-struct PropData
+struct MapData
 {
-    int gridX;
-    int gridY;
-    string propType;
-    string spriteName;
+    struct RoomInfo
+    {
+        int roomType;
+        int gridWidth, gridHeight;
+        bool canSpawnMonsters;
+        bool doors[4]; // North, East, South, West
+    } roomInfo;
 
-    PropData() : gridX(0), gridY(0), propType(""), spriteName("") {}
-    PropData(int x, int y, const string& type, const string& sprite)
-        : gridX(x), gridY(y), propType(type), spriteName(sprite) {
-    }
+    struct TileData
+    {
+        int layer;      // 0: Ground, 1: UpperGround, 2: Collider
+        int x, y;
+        int value;      // 타일 ID (Ground/UpperGround) 또는 0/1 (Collider)
+    };
+
+    vector<TileData> tiles;
+};
+
+struct TileMapSaveData
+{
+    // 룸 정보
+    int roomType;
+    int gridWidth, gridHeight;
+    bool canSpawnMonsters;
+    bool doors[4];
+
+    // 레이어별 타일 데이터
+    vector<vector<int>> groundLayer;      // 타일 ID 저장
+    vector<vector<int>> upperGroundLayer; // 타일 ID 저장  
+    vector<vector<bool>> colliderLayer;   // 0/1 저장
 };
 
 class FileManager : public SingleTon<FileManager>
@@ -27,40 +47,60 @@ public:
     virtual ~FileManager();
 
 public:
-    // 맵 저장/로딩
-    bool SaveMap(const string& filename, TileMapEditor* tileMapEditor);
-    bool LoadMap(const string& filename, TileMapEditor* tileMapEditor);
+    bool Init();
+    void Release();
 
-    // 프롭 데이터 관리
-    void AddProp(const PropData& prop);
-    void Removeprop(int gridX, int gridY);
-    void ClearProps();
-    vector<PropData> GetProps() const { return m_Props; }
+    // 맵 파일 저장/로드 (새로운 타일 ID 방식)
+    bool SaveTileMap(const wstring& fileName, const TileMapSaveData& mapData);
+    bool LoadTileMap(const wstring& fileName, TileMapSaveData& mapData);
 
-    // 파일 검증
-    bool ValidateMapFile(const string& filename);
+    // 기존 맵 파일 변환 (이전 버전 호환성)
+    bool ConvertOldMapFormat(const wstring& oldFileName, const wstring& newFileName);
 
-    // 게임 호환 포맷으로 저장
-    bool SaveForGame(const string& filename, TileMapEditor* tileMapEditor);
+    // 파일 유틸리티
+    bool FileExists(const wstring& fileName) const;
+    bool CreateDirectory(const wstring& dirPath) const;
+    vector<wstring> GetMapFileList(const wstring& directory = L"../Maps/") const;
+    wstring GetLatestMapFile(const wstring& directory = L"../Maps/") const;
+    bool DeleteMapFile(const wstring& fileName) const;
+
+    // 백업 기능
+    bool CreateBackup(const wstring& fileName) const;
+    bool RestoreBackup(const wstring& backupFileName, const wstring& targetFileName) const;
+    void CleanOldBackups(const wstring& directory = L"../Maps/Backup/", int keepDays = 7) const;
+
+    // 맵 검증 및 수정
+    bool ValidateMapData(const TileMapSaveData& mapData) const;
+    void FixCorruptedMapData(TileMapSaveData& mapData) const;
+
+    // 통계 및 정보
+    struct MapStatistics
+    {
+        int totalTiles;
+        int uniqueTileCount;
+        int colliderCount;
+        map<int, int> tileUsageCount; // 타일 ID별 사용 횟수
+        size_t fileSize;
+    };
+    MapStatistics GetMapStatistics(const wstring& fileName) const;
 
 private:
-    vector<PropData> m_Props;
+    // 파일 파싱 헬퍼
+    bool ParseRoomInfo(const string& line, MapData::RoomInfo& roomInfo) const;
+    bool ParseTileData(const string& line, MapData::TileData& tileData) const;
 
-    // XML 헬퍼 함수들
-    bool WriteXMLHeader(FILE* file);
-    bool WriteRoomConfig(FILE* file, const RoomConfig& config);
-    bool WriteTileData(FILE* file, TileMapEditor* tileMapEditor);
-    bool WritePropData(FILE* file);
-    bool WriteXMLFooter(FILE* file);
+    // 에러 처리
+    void LogError(const string& message) const;
+    void LogWarning(const string& message) const;
 
-    // 로딩 헬퍼 함수들
-    bool ParseXMLFile(const string& filename, RoomConfig& config, TileMapEditor* tileMapEditor);
-    void ParseRoomAttributes(const string& roomLine, RoomConfig& config);
-    void ParseTileRow(const string& row, TileMapEditor* tileMapEditor, LayerType layer, int y);
-    void ParsePropData(const string& propLine);
+    // 파일명 유틸리티
+    wstring GenerateTimestampedFileName(const wstring& baseName) const;
+    wstring GetFileExtension(const wstring& fileName) const;
+    wstring GetFileNameWithoutExtension(const wstring& fileName) const;
 
-    // 유틸리티 함수들
-    string EscapeXML(const string& text);
-    string GetTileTypeName(int tileType);
-    int GetTileTypeFromName(const string& name);
+private:
+    bool m_IsInitialized;
+    wstring m_DefaultMapDirectory;
+    wstring m_BackupDirectory;
+    mutable ofstream m_LogFile;
 };

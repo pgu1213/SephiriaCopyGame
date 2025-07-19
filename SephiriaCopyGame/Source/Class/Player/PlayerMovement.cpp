@@ -34,14 +34,23 @@ void PlayerMovement::Update(float deltaTime)
     InputManager* input = InputManager::GetInstance();
 
     if (input->IsKeyPressed('A'))
+    {
         inputDir.x -= 1.0f;
+    }
     if (input->IsKeyPressed('D'))
+    {
         inputDir.x += 1.0f;
+    }
     if (input->IsKeyPressed('W'))
+    {
         inputDir.y -= 1.0f;
+    }
     if (input->IsKeyPressed('S'))
+    {
         inputDir.y += 1.0f;
+    }
 
+    // 반전
     if (inputDir.x != 0.0f)
     {
         SpriteRenderer* spriteRenderer = m_pOwner->GetComponent<SpriteRenderer>();
@@ -51,6 +60,7 @@ void PlayerMovement::Update(float deltaTime)
         }
     }
 
+    // 애니메이션
     Animation* animation = m_pOwner->GetComponent<Animation>();
     if (animation)
     {

@@ -1,651 +1,745 @@
 #include "../../pch.h"
 #include "FileManager.h"
-#include "../../Editor/TileMapEditor/TileMapEditor.h"
-#include <fstream>
-#include <sstream>
+#include <iostream>
+#include <iomanip>
+#include <chrono>
 
 FileManager::FileManager()
+    : m_IsInitialized(false)
+    , m_DefaultMapDirectory(L"../Maps/")
+    , m_BackupDirectory(L"../Maps/Backup/")
 {
 }
 
 FileManager::~FileManager()
 {
+    Release();
 }
 
-bool FileManager::SaveMap(const string& filename, TileMapEditor* tileMapEditor)
+bool FileManager::Init()
 {
-    if (!tileMapEditor)
+    if (m_IsInitialized) return true;
+
+    try
     {
-        printf("Error: TileMapEditor is null\n");
+        // 디렉토리 생성
+        CreateDirectory(m_DefaultMapDirectory);
+        CreateDirectory(m_BackupDirectory);
+
+        // 로그 파일 초기화
+        wstring logPath = m_DefaultMapDirectory + L"file_manager.log";
+        m_LogFile.open(logPath, ios::app);
+
+        m_IsInitialized = true;
+        LogError("FileManager initialized successfully");
+        return true;
+    }
+    catch (const exception& e)
+    {
+        LogError("Failed to initialize FileManager: " + string(e.what()));
+        return false;
+    }
+}
+
+void FileManager::Release()
+{
+    if (m_LogFile.is_open())
+    {
+        LogError("FileManager shutting down");
+        m_LogFile.close();
+    }
+    m_IsInitialized = false;
+}
+
+bool FileManager::SaveTileMap(const wstring& fileName, const TileMapSaveData& mapData)
+{
+    if (!m_IsInitialized)
+    {
+        LogError("FileManager not initialized");
         return false;
     }
 
-    string fullPath = "Maps/" + filename;
-
-    // Maps 폴더가 없으면 생성
-    CreateDirectoryA("Maps", NULL);
-
-    FILE* file = nullptr;
-    errno_t err = fopen_s(&file, fullPath.c_str(), "w");
-
-    if (err != 0 || !file)
+    if (!ValidateMapData(mapData))
     {
-        printf("Error: Failed to create file %s\n", fullPath.c_str());
+        LogError("Invalid map data provided for saving");
         return false;
     }
 
-    printf("Saving map to: %s\n", fullPath.c_str());
-
-    bool success = true;
-
-    // XML 헤더 작성
-    success &= WriteXMLHeader(file);
-
-    // 방 설정 작성
-    RoomConfig config = ConfigManager::GetInstance()->GetCurrentConfig();
-    success &= WriteRoomConfig(file, config);
-
-    // 타일 데이터 작성
-    success &= WriteTileData(file, tileMapEditor);
-
-    // 프롭 데이터 작성
-    success &= WritePropData(file);
-
-    // XML 푸터 작성
-    success &= WriteXMLFooter(file);
-
-    fclose(file);
-
-    if (success)
+    try
     {
-        printf("Map saved successfully: %s\n", fullPath.c_str());
-
-        // 게임 호환 포맷으로도 저장
-        string gameFilename = filename;
-        size_t pos = gameFilename.find(".xml");
-        if (pos != string::npos)
+        // 백업 생성 (기존 파일이 있는 경우)
+        if (FileExists(fileName))
         {
-            gameFilename.replace(pos, 4, "_game.txt");
-        }
-        else
-        {
-            gameFilename += "_game.txt";
+            CreateBackup(fileName);
         }
 
-        SaveForGame(gameFilename, tileMapEditor);
-    }
-    else
-    {
-        printf("Error: Failed to save map completely\n");
-    }
-
-    return success;
-}
-
-bool FileManager::LoadMap(const string& filename, TileMapEditor* tileMapEditor)
-{
-    if (!tileMapEditor)
-    {
-        printf("Error: TileMapEditor is null\n");
-        return false;
-    }
-
-    string fullPath = "Maps/" + filename;
-
-    if (!ValidateMapFile(fullPath))
-    {
-        printf("Error: Invalid or missing map file: %s\n", fullPath.c_str());
-        return false;
-    }
-
-    RoomConfig config;
-    bool success = ParseXMLFile(fullPath, config, tileMapEditor);
-
-    if (success)
-    {
-        // 로드된 설정을 ConfigManager에 적용
-        ConfigManager::GetInstance()->SetCurrentConfig(config);
-        printf("Map loaded successfully: %s\n", fullPath.c_str());
-    }
-    else
-    {
-        printf("Error: Failed to load map: %s\n", fullPath.c_str());
-    }
-
-    return success;
-}
-
-void FileManager::AddProp(const PropData& prop)
-{
-    // 같은 위치에 이미 프롭이 있는지 확인
-    for (auto it = m_Props.begin(); it != m_Props.end(); ++it)
-    {
-        if (it->gridX == prop.gridX && it->gridY == prop.gridY)
+        ofstream file(fileName);
+        if (!file.is_open())
         {
-            // 기존 프롭 교체
-            *it = prop;
-            return;
-        }
-    }
-
-    // 새 프롭 추가
-    m_Props.push_back(prop);
-}
-
-void FileManager::Removeprop(int gridX, int gridY)
-{
-    for (auto it = m_Props.begin(); it != m_Props.end(); ++it)
-    {
-        if (it->gridX == gridX && it->gridY == gridY)
-        {
-            m_Props.erase(it);
-            break;
-        }
-    }
-}
-
-void FileManager::ClearProps()
-{
-    m_Props.clear();
-}
-
-bool FileManager::ValidateMapFile(const string& filename)
-{
-    FILE* file = nullptr;
-    errno_t err = fopen_s(&file, filename.c_str(), "r");
-
-    if (err != 0 || !file)
-    {
-        return false;
-    }
-
-    // 기본적인 XML 구조 검증
-    char line[1024];
-    bool hasXmlDeclaration = false;
-    bool hasRoomTag = false;
-
-    while (fgets(line, sizeof(line), file))
-    {
-        string lineStr(line);
-
-        if (lineStr.find("<?xml") != string::npos)
-        {
-            hasXmlDeclaration = true;
+            LogError("Failed to open file for writing: " + string(fileName.begin(), fileName.end()));
+            return false;
         }
 
-        if (lineStr.find("<room") != string::npos)
-        {
-            hasRoomTag = true;
-        }
-    }
+        // 헤더 정보 저장
+        file << "# Room Data for Game (Tile ID Format v2.0)" << endl;
+        file << "RoomType=" << mapData.roomType << endl;
+        file << "GridSize=" << mapData.gridWidth << "," << mapData.gridHeight << endl;
+        file << "CanSpawnMonsters=" << (mapData.canSpawnMonsters ? 1 : 0) << endl;
 
-    fclose(file);
-
-    return hasXmlDeclaration && hasRoomTag;
-}
-
-bool FileManager::SaveForGame(const string& filename, TileMapEditor* tileMapEditor)
-{
-    string fullPath = "Maps/" + filename;
-
-    FILE* file = nullptr;
-    errno_t err = fopen_s(&file, fullPath.c_str(), "w");
-
-    if (err != 0 || !file)
-    {
-        printf("Error: Failed to create game file %s\n", fullPath.c_str());
-        return false;
-    }
-
-    RoomConfig config = ConfigManager::GetInstance()->GetCurrentConfig();
-
-    // 게임에서 사용할 간단한 포맷으로 저장
-    fprintf(file, "# Room Data for Game\n");
-    fprintf(file, "RoomType=%d\n", static_cast<int>(config.roomType));
-    fprintf(file, "GridSize=%d,%d\n", config.gridWidth, config.gridHeight);
-    fprintf(file, "CanSpawnMonsters=%d\n", config.canSpawnMonsters ? 1 : 0);
-    fprintf(file, "Doors=%d,%d,%d,%d\n",
-        config.doors[0] ? 1 : 0, config.doors[1] ? 1 : 0,
-        config.doors[2] ? 1 : 0, config.doors[3] ? 1 : 0);
-
-    fprintf(file, "\n# Tile Data (Layer,X,Y,Type)\n");
-
-    // 타일 데이터를 간단한 형태로 저장
-    for (int layer = 0; layer < 4; ++layer)
-    {
-        for (int x = 0; x < config.gridWidth; ++x)
-        {
-            for (int y = 0; y < config.gridHeight; ++y)
-            {
-                TileData* tile = tileMapEditor->GetTileAt(x, y); // 해당 레이어의 타일 가져오기
-                if (tile && tile->type != TileType::EMPTY)
-                {
-                    fprintf(file, "T=%d,%d,%d,%d\n",
-                        layer, x, y, static_cast<int>(tile->type));
-                }
-            }
-        }
-    }
-
-    fprintf(file, "\n# Prop Data (X,Y,Type,Sprite)\n");
-    for (const PropData& prop : m_Props)
-    {
-        fprintf(file, "P=%d,%d,%s,%s\n",
-            prop.gridX, prop.gridY,
-            prop.propType.c_str(), prop.spriteName.c_str());
-    }
-
-    fclose(file);
-
-    printf("Game format saved: %s\n", fullPath.c_str());
-    return true;
-}
-
-bool FileManager::WriteXMLHeader(FILE* file)
-{
-    fprintf(file, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
-    return true;
-}
-
-bool FileManager::WriteRoomConfig(FILE* file, const RoomConfig& config)
-{
-    fprintf(file, "  <RoomConfig>\n");
-    fprintf(file, "    <Name>%s</Name>\n", EscapeXML(config.roomName).c_str());
-    fprintf(file, "    <Type>%d</Type>\n", static_cast<int>(config.roomType));
-    fprintf(file, "    <GridWidth>%d</GridWidth>\n", config.gridWidth);
-    fprintf(file, "    <GridHeight>%d</GridHeight>\n", config.gridHeight);
-    fprintf(file, "    <CanSpawnMonsters>%s</CanSpawnMonsters>\n", config.canSpawnMonsters ? "true" : "false");
-    fprintf(file, "    <Doors>\n");
-    fprintf(file, "      <North>%s</North>\n", config.doors[0] ? "true" : "false");
-    fprintf(file, "      <South>%s</South>\n", config.doors[1] ? "true" : "false");
-    fprintf(file, "      <East>%s</East>\n", config.doors[2] ? "true" : "false");
-    fprintf(file, "      <West>%s</West>\n", config.doors[3] ? "true" : "false");
-    fprintf(file, "    </Doors>\n");
-    fprintf(file, "  </RoomConfig>\n");
-    return true;
-}
-
-bool FileManager::WriteTileData(FILE* file, TileMapEditor* tileMapEditor)
-{
-    RoomConfig config = ConfigManager::GetInstance()->GetCurrentConfig();
-
-    // mainLayer 시작
-    fprintf(file, "  <mainLayer>\n");
-
-    // 각 레이어별로 데이터 작성 (ground, upperGround, wall, cliff)
-    const char* layerNames[] = { "ground", "upperGround", "wall", "cliff" };
-
-    for (int layer = 0; layer < 4; ++layer)
-    {
-        fprintf(file, "    <%s>", layerNames[layer]);
-
-        // 그리드 데이터를 한 줄씩 작성
-        for (int y = 0; y < config.gridHeight; ++y)
-        {
-            for (int x = 0; x < config.gridWidth; ++x)
-            {
-                // 여기서 실제 타일 데이터를 가져와야 함 (TileMapEditor에서 구현 필요)
-                TileData* tile = tileMapEditor->GetTileAtLayer(layer, x, y);
-
-                char tileChar = 'X'; // 기본값
-                if (tile && tile->type != TileType::EMPTY)
-                {
-                    // 타일 타입에 따른 문자 설정
-                    switch (tile->type)
-                    {
-                    case TileType::FLOOR: tileChar = '0'; break;
-                    case TileType::WALL: tileChar = '1'; break;
-                    case TileType::CLIFF: tileChar = '2'; break;
-                    case TileType::MONSTER_SPAWN: tileChar = '3'; break;
-                    case TileType::MONSTER_MOVE: tileChar = '4'; break;
-                    case TileType::DOOR_NORTH:
-                    case TileType::DOOR_SOUTH:
-                    case TileType::DOOR_EAST:
-                    case TileType::DOOR_WEST: tileChar = '5'; break;
-                    default: tileChar = 'X'; break;
-                    }
-                }
-
-                fprintf(file, "%c ", tileChar);
-            }
-            fprintf(file, "\n");
-        }
-
-        fprintf(file, "</%s>\n", layerNames[layer]);
-    }
-
-    // props 섹션
-    fprintf(file, "    <props>\n");
-
-    // 프롭 데이터 작성
-    for (const PropData& prop : m_Props)
-    {
-        fprintf(file, "      <%s position=\"%.4f,%.4f\" localScale=\"1,1,1\" />\n",
-            prop.propType.c_str(),
-            static_cast<float>(prop.gridX) + 0.5f, // 그리드 중앙 위치
-            static_cast<float>(prop.gridY) + 0.5f);
-    }
-
-    fprintf(file, "    </props>\n");
-    fprintf(file, "  </mainLayer>\n");
-
-    return true;
-}
-
-bool FileManager::WritePropData(FILE* file)
-{
-    // 패시지 레이어들 작성 (passageLayer0~passageLayer5)
-    for (int passageLayer = 0; passageLayer < 6; ++passageLayer)
-    {
-        fprintf(file, "  <passageLayer%d position=\"0,0\" size=\"0,0\">\n", passageLayer);
-
-        // 각 패시지 레이어도 ground, upperGround, wall, cliff 구조
-        const char* layerNames[] = { "ground", "upperGround", "wall", "cliff" };
-
+        // 문 정보 저장
+        file << "Doors=";
         for (int i = 0; i < 4; ++i)
         {
-            fprintf(file, "    <%s>", layerNames[i]);
+            file << (mapData.doors[i] ? 1 : 0);
+            if (i < 3) file << ",";
+        }
+        file << endl << endl;
 
-            // 기본적으로 빈 레이어 (모든 X)
-            RoomConfig config = ConfigManager::GetInstance()->GetCurrentConfig();
-            for (int y = 0; y < config.gridHeight; ++y)
+        file << "# Tile Data (Layer,X,Y,Value)" << endl;
+        file << "# Layer 0: Ground (TileID), Layer 1: UpperGround (TileID), Layer 2: Collider (0/1)" << endl;
+
+        // Ground 레이어 저장 (타일 ID)
+        for (int y = 0; y < mapData.gridHeight; ++y)
+        {
+            for (int x = 0; x < mapData.gridWidth; ++x)
             {
-                for (int x = 0; x < config.gridWidth; ++x)
+                if (mapData.groundLayer[y][x] > 0)
                 {
-                    fprintf(file, "X ");
+                    file << "T=0," << x << "," << y << "," << mapData.groundLayer[y][x] << endl;
                 }
-                fprintf(file, "\n");
             }
-
-            fprintf(file, "</%s>\n", layerNames[i]);
         }
 
-        fprintf(file, "    <props />\n");
-        fprintf(file, "  </passageLayer%d>\n", passageLayer);
+        // UpperGround 레이어 저장 (타일 ID)
+        for (int y = 0; y < mapData.gridHeight; ++y)
+        {
+            for (int x = 0; x < mapData.gridWidth; ++x)
+            {
+                if (mapData.upperGroundLayer[y][x] > 0)
+                {
+                    file << "T=1," << x << "," << y << "," << mapData.upperGroundLayer[y][x] << endl;
+                }
+            }
+        }
+
+        // Collider 레이어 저장 (0/1)
+        for (int y = 0; y < mapData.gridHeight; ++y)
+        {
+            for (int x = 0; x < mapData.gridWidth; ++x)
+            {
+                if (mapData.colliderLayer[y][x])
+                {
+                    file << "T=2," << x << "," << y << ",1" << endl;
+                }
+            }
+        }
+
+        file.close();
+
+        LogError("Map saved successfully: " + string(fileName.begin(), fileName.end()));
+        return true;
     }
-
-    return true;
-}
-
-bool FileManager::WriteXMLFooter(FILE* file)
-{
-    fprintf(file, "</room>\n");
-    return true;
-}
-
-bool FileManager::ParseXMLFile(const string& filename, RoomConfig& config, TileMapEditor* tileMapEditor)
-{
-    // 간단한 XML 파싱 구현 (실제로는 더 정교한 XML 파서 사용 권장)
-    FILE* file = nullptr;
-    errno_t err = fopen_s(&file, filename.c_str(), "r");
-
-    if (err != 0 || !file)
+    catch (const exception& e)
     {
-        printf("Error: Cannot open file %s for reading\n", filename.c_str());
+        LogError("Exception while saving map: " + string(e.what()));
+        return false;
+    }
+}
+
+bool FileManager::LoadTileMap(const wstring& fileName, TileMapSaveData& mapData)
+{
+    if (!m_IsInitialized)
+    {
+        LogError("FileManager not initialized");
         return false;
     }
 
-    char line[1024];
-    bool inRoom = false;
-    bool inMainLayer = false;
-    string currentLayer = "";
-    int currentY = 0;
-    LayerType currentLayerType = LayerType::BACKGROUND;
-
-    while (fgets(line, sizeof(line), file))
+    if (!FileExists(fileName))
     {
-        string lineStr(line);
-
-        // room 태그 파싱
-        if (lineStr.find("<room") != string::npos)
-        {
-            inRoom = true;
-            ParseRoomAttributes(lineStr, config);
-        }
-
-        // mainLayer 시작
-        else if (lineStr.find("<mainLayer>") != string::npos)
-        {
-            inMainLayer = true;
-        }
-
-        // 레이어 시작 태그들
-        else if (lineStr.find("<ground>") != string::npos)
-        {
-            currentLayer = "ground";
-            currentLayerType = LayerType::BACKGROUND;
-            currentY = 0;
-        }
-        else if (lineStr.find("<upperGround>") != string::npos)
-        {
-            currentLayer = "upperGround";
-            currentLayerType = LayerType::DECORATION;
-            currentY = 0;
-        }
-        else if (lineStr.find("<wall>") != string::npos)
-        {
-            currentLayer = "wall";
-            currentLayerType = LayerType::COLLISION;
-            currentY = 0;
-        }
-        else if (lineStr.find("<cliff>") != string::npos)
-        {
-            currentLayer = "cliff";
-            currentLayerType = LayerType::INTERACTION;
-            currentY = 0;
-        }
-
-        // 레이어 종료 태그들
-        else if (lineStr.find("</ground>") != string::npos ||
-            lineStr.find("</upperGround>") != string::npos ||
-            lineStr.find("</wall>") != string::npos ||
-            lineStr.find("</cliff>") != string::npos)
-        {
-            currentLayer = "";
-        }
-
-        // 타일 데이터 파싱
-        else if (!currentLayer.empty() && inMainLayer)
-        {
-            ParseTileRow(lineStr, tileMapEditor, currentLayerType, currentY);
-            currentY++;
-        }
-
-        // props 파싱
-        else if (lineStr.find("<") != string::npos && lineStr.find("position=") != string::npos)
-        {
-            ParsePropData(lineStr);
-        }
+        LogError("Map file does not exist: " + string(fileName.begin(), fileName.end()));
+        return false;
     }
 
-    fclose(file);
-    return true;
-}
-
-void FileManager::ParseRoomAttributes(const string& roomLine, RoomConfig& config)
-{
-    // spawnMonster 파싱
-    size_t pos = roomLine.find("spawnMonster=\"");
-    if (pos != string::npos)
+    try
     {
-        pos += 14; // "spawnMonster=\"" 길이
-        config.canSpawnMonsters = (roomLine.substr(pos, 4) == "true");
-    }
-
-    // type 파싱
-    pos = roomLine.find("type=\"");
-    if (pos != string::npos)
-    {
-        pos += 6; // "type=\"" 길이
-        int type = stoi(roomLine.substr(pos, 1));
-        config.roomType = static_cast<RoomType>(type);
-    }
-
-    // passages 파싱
-    pos = roomLine.find("passages=\"");
-    if (pos != string::npos)
-    {
-        pos += 10; // "passages=\"" 길이
-        string passages = roomLine.substr(pos, 8);
-
-        config.doors[static_cast<int>(DoorDirection::NORTH)] = (passages[0] == '1');
-        config.doors[static_cast<int>(DoorDirection::SOUTH)] = (passages[1] == '1');
-        config.doors[static_cast<int>(DoorDirection::EAST)] = (passages[2] == '1');
-        config.doors[static_cast<int>(DoorDirection::WEST)] = (passages[3] == '1');
-    }
-}
-
-void FileManager::ParseTileRow(const string& row, TileMapEditor* tileMapEditor, LayerType layer, int y)
-{
-    if (!tileMapEditor) return;
-
-    stringstream ss(row);
-    string token;
-    int x = 0;
-
-    while (ss >> token && x < 100) // 최대 그리드 크기 제한
-    {
-        if (token.length() == 1)
+        ifstream file(fileName);
+        if (!file.is_open())
         {
-            TileType tileType = TileType::EMPTY;
+            LogError("Failed to open file for reading: " + string(fileName.begin(), fileName.end()));
+            return false;
+        }
 
-            // 문자를 타일 타입으로 변환
-            switch (token[0])
+        // 기본값 초기화
+        mapData.roomType = 1;
+        mapData.gridWidth = 50;
+        mapData.gridHeight = 50;
+        mapData.canSpawnMonsters = true;
+        memset(mapData.doors, false, sizeof(mapData.doors));
+
+        string line;
+        while (getline(file, line))
+        {
+            if (line.empty() || line[0] == '#') continue;
+
+            // 룸 타입 파싱
+            if (line.find("RoomType=") == 0)
             {
-            case '0': tileType = TileType::FLOOR; break;
-            case '1': tileType = TileType::WALL; break;
-            case '2': tileType = TileType::CLIFF; break;
-            case '3': tileType = TileType::MONSTER_SPAWN; break;
-            case '4': tileType = TileType::MONSTER_MOVE; break;
-            case '5': tileType = TileType::DOOR_NORTH; break; // 문 타입은 위치에 따라 결정
-            default: tileType = TileType::EMPTY; break;
+                mapData.roomType = stoi(line.substr(9));
             }
-
-            if (tileType != TileType::EMPTY)
+            // 그리드 크기 파싱
+            else if (line.find("GridSize=") == 0)
             {
-                // 직접 타일맵에 설정 (레이어별로)
-                TileData* tile = tileMapEditor->GetTileAtLayer(static_cast<int>(layer), x, y);
-                if (tile)
+                string sizeStr = line.substr(9);
+                size_t commaPos = sizeStr.find(',');
+                if (commaPos != string::npos)
                 {
-                    tile->type = tileType;
-                    tile->spriteIndex = 0;
+                    mapData.gridWidth = stoi(sizeStr.substr(0, commaPos));
+                    mapData.gridHeight = stoi(sizeStr.substr(commaPos + 1));
+                }
+            }
+            // 몬스터 스폰 가능 여부
+            else if (line.find("CanSpawnMonsters=") == 0)
+            {
+                mapData.canSpawnMonsters = (stoi(line.substr(17)) == 1);
+            }
+            // 문 정보 파싱
+            else if (line.find("Doors=") == 0)
+            {
+                string doorStr = line.substr(6);
+                stringstream ss(doorStr);
+                string token;
+                int doorIndex = 0;
 
-                    // 타일 속성 설정
-                    switch (tileType)
+                while (getline(ss, token, ',') && doorIndex < 4)
+                {
+                    mapData.doors[doorIndex] = (stoi(token) == 1);
+                    doorIndex++;
+                }
+            }
+        }
+
+        // 레이어 데이터 초기화
+        mapData.groundLayer.resize(mapData.gridHeight);
+        mapData.upperGroundLayer.resize(mapData.gridHeight);
+        mapData.colliderLayer.resize(mapData.gridHeight);
+
+        for (int y = 0; y < mapData.gridHeight; ++y)
+        {
+            mapData.groundLayer[y].resize(mapData.gridWidth, 0);
+            mapData.upperGroundLayer[y].resize(mapData.gridWidth, 0);
+            mapData.colliderLayer[y].resize(mapData.gridWidth, false);
+        }
+
+        // 파일을 다시 읽어서 타일 데이터 파싱
+        file.clear();
+        file.seekg(0, ios::beg);
+
+        while (getline(file, line))
+        {
+            if (line.find("T=") == 0)
+            {
+                // T=Layer,X,Y,Value 형식 파싱
+                stringstream ss(line.substr(2));
+                string token;
+                vector<int> values;
+
+                while (getline(ss, token, ','))
+                {
+                    values.push_back(stoi(token));
+                }
+
+                if (values.size() == 4)
+                {
+                    int layer = values[0];
+                    int x = values[1];
+                    int y = values[2];
+                    int value = values[3];
+
+                    // 범위 체크
+                    if (x >= 0 && x < mapData.gridWidth && y >= 0 && y < mapData.gridHeight)
                     {
-                    case TileType::WALL:
-                    case TileType::CLIFF:
-                        tile->isWalkable = false;
-                        tile->canSpawnMonster = false;
-                        break;
-                    case TileType::MONSTER_SPAWN:
-                        tile->isWalkable = true;
-                        tile->canSpawnMonster = true;
-                        break;
-                    default:
-                        tile->isWalkable = true;
-                        tile->canSpawnMonster = false;
-                        break;
+                        if (layer == 0) // Ground
+                        {
+                            mapData.groundLayer[y][x] = value;
+                        }
+                        else if (layer == 1) // UpperGround
+                        {
+                            mapData.upperGroundLayer[y][x] = value;
+                        }
+                        else if (layer == 2) // Collider
+                        {
+                            mapData.colliderLayer[y][x] = (value == 1);
+                        }
                     }
                 }
             }
         }
-        x++;
+
+        file.close();
+
+        // 로드된 데이터 검증 및 수정
+        FixCorruptedMapData(mapData);
+
+        LogError("Map loaded successfully: " + string(fileName.begin(), fileName.end()));
+        return true;
+    }
+    catch (const exception& e)
+    {
+        LogError("Exception while loading map: " + string(e.what()));
+        return false;
     }
 }
 
-void FileManager::ParsePropData(const string& propLine)
+bool FileManager::ValidateMapData(const TileMapSaveData& mapData) const
 {
-    // 프롭 이름 추출
-    size_t startPos = propLine.find('<');
-    size_t endPos = propLine.find(' ', startPos);
-    if (startPos == string::npos || endPos == string::npos) return;
+    // 기본 검증
+    if (mapData.gridWidth <= 0 || mapData.gridHeight <= 0)
+    {
+        LogError("Invalid grid size in map data");
+        return false;
+    }
 
-    string propType = propLine.substr(startPos + 1, endPos - startPos - 1);
+    if (mapData.gridWidth > 1000 || mapData.gridHeight > 1000)
+    {
+        LogWarning("Large grid size detected, this may impact performance");
+    }
 
-    // position 파싱
-    size_t posStart = propLine.find("position=\"");
-    if (posStart == string::npos) return;
+    // 레이어 크기 검증
+    if (mapData.groundLayer.size() != mapData.gridHeight ||
+        mapData.upperGroundLayer.size() != mapData.gridHeight ||
+        mapData.colliderLayer.size() != mapData.gridHeight)
+    {
+        LogError("Layer height mismatch in map data");
+        return false;
+    }
 
-    posStart += 10; // "position=\"" 길이
-    size_t posEnd = propLine.find("\"", posStart);
-    if (posEnd == string::npos) return;
+    for (int y = 0; y < mapData.gridHeight; ++y)
+    {
+        if (mapData.groundLayer[y].size() != mapData.gridWidth ||
+            mapData.upperGroundLayer[y].size() != mapData.gridWidth ||
+            mapData.colliderLayer[y].size() != mapData.gridWidth)
+        {
+            LogError("Layer width mismatch in map data at row " + to_string(y));
+            return false;
+        }
+    }
 
-    string posStr = propLine.substr(posStart, posEnd - posStart);
-    size_t commaPos = posStr.find(',');
-    if (commaPos == string::npos) return;
-
-    float x = stof(posStr.substr(0, commaPos));
-    float y = stof(posStr.substr(commaPos + 1));
-
-    // 그리드 좌표로 변환 (0.5를 빼서 정수 좌표로)
-    int gridX = static_cast<int>(x);
-    int gridY = static_cast<int>(y);
-
-    // 프롭 데이터 추가
-    PropData prop(gridX, gridY, propType, "");
-    AddProp(prop);
+    return true;
 }
 
-string FileManager::EscapeXML(const string& text)
+void FileManager::FixCorruptedMapData(TileMapSaveData& mapData) const
 {
-    string result = text;
-
-    // XML 특수 문자 이스케이프
-    size_t pos = 0;
-    while ((pos = result.find("&", pos)) != string::npos)
+    // 타일 ID 범위 검증 (0-1000 범위로 제한)
+    for (int y = 0; y < mapData.gridHeight; ++y)
     {
-        result.replace(pos, 1, "&amp;");
-        pos += 5;
-    }
+        for (int x = 0; x < mapData.gridWidth; ++x)
+        {
+            if (mapData.groundLayer[y][x] < 0 || mapData.groundLayer[y][x] > 1000)
+            {
+                LogWarning("Invalid tile ID found at Ground(" + to_string(x) + "," + to_string(y) + "), resetting to 0");
+                mapData.groundLayer[y][x] = 0;
+            }
 
-    pos = 0;
-    while ((pos = result.find("<", pos)) != string::npos)
-    {
-        result.replace(pos, 1, "&lt;");
-        pos += 4;
+            if (mapData.upperGroundLayer[y][x] < 0 || mapData.upperGroundLayer[y][x] > 1000)
+            {
+                LogWarning("Invalid tile ID found at UpperGround(" + to_string(x) + "," + to_string(y) + "), resetting to 0");
+                mapData.upperGroundLayer[y][x] = 0;
+            }
+        }
     }
-
-    pos = 0;
-    while ((pos = result.find(">", pos)) != string::npos)
-    {
-        result.replace(pos, 1, "&gt;");
-        pos += 4;
-    }
-
-    pos = 0;
-    while ((pos = result.find("\"", pos)) != string::npos)
-    {
-        result.replace(pos, 1, "&quot;");
-        pos += 6;
-    }
-
-    return result;
 }
 
-string FileManager::GetTileTypeName(int tileType)
+bool FileManager::FileExists(const wstring& fileName) const
 {
-    const char* typeNames[] = {
-        "EMPTY", "FLOOR", "WALL", "CLIFF", "MONSTER_SPAWN",
-        "MONSTER_MOVE", "DOOR_NORTH", "DOOR_SOUTH", "DOOR_EAST", "DOOR_WEST"
-    };
-
-    if (tileType >= 0 && tileType < sizeof(typeNames) / sizeof(typeNames[0]))
-    {
-        return string(typeNames[tileType]);
-    }
-
-    return "UNKNOWN";
+    return filesystem::exists(fileName);
 }
 
-int FileManager::GetTileTypeFromName(const string& name)
+bool FileManager::CreateDirectory(const wstring& dirPath) const
 {
-    map<string, int> nameToType = {
-        {"EMPTY", 0}, {"FLOOR", 1}, {"WALL", 2}, {"CLIFF", 3},
-        {"MONSTER_SPAWN", 4}, {"MONSTER_MOVE", 5},
-        {"DOOR_NORTH", 6}, {"DOOR_SOUTH", 7}, {"DOOR_EAST", 8}, {"DOOR_WEST", 9}
-    };
+    try
+    {
+        if (!filesystem::exists(dirPath))
+        {
+            return filesystem::create_directories(dirPath);
+        }
+        return true;
+    }
+    catch (const filesystem::filesystem_error& e)
+    {
+        LogError("Failed to create directory: " + string(e.what()));
+        return false;
+    }
+}
 
-    auto it = nameToType.find(name);
-    return (it != nameToType.end()) ? it->second : 0;
+vector<wstring> FileManager::GetMapFileList(const wstring& directory) const
+{
+    vector<wstring> mapFiles;
+
+    try
+    {
+        if (filesystem::exists(directory))
+        {
+            for (const auto& entry : filesystem::directory_iterator(directory))
+            {
+                if (entry.is_regular_file())
+                {
+                    wstring extension = entry.path().extension().wstring();
+                    if (extension == L".txt" || extension == L".map")
+                    {
+                        mapFiles.push_back(entry.path().wstring());
+                    }
+                }
+            }
+        }
+    }
+    catch (const filesystem::filesystem_error& e)
+    {
+        LogError("Error reading map file list: " + string(e.what()));
+    }
+
+    // 파일명으로 정렬
+    sort(mapFiles.begin(), mapFiles.end());
+    return mapFiles;
+}
+
+wstring FileManager::GetLatestMapFile(const wstring& directory) const
+{
+    wstring latestFile;
+    filesystem::file_time_type latestTime{};
+
+    try
+    {
+        if (filesystem::exists(directory))
+        {
+            for (const auto& entry : filesystem::directory_iterator(directory))
+            {
+                if (entry.is_regular_file())
+                {
+                    wstring extension = entry.path().extension().wstring();
+                    if (extension == L".txt" || extension == L".map")
+                    {
+                        auto fileTime = entry.last_write_time();
+                        if (fileTime > latestTime)
+                        {
+                            latestTime = fileTime;
+                            latestFile = entry.path().wstring();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    catch (const filesystem::filesystem_error& e)
+    {
+        LogError("Error finding latest map file: " + string(e.what()));
+    }
+
+    return latestFile;
+}
+
+bool FileManager::CreateBackup(const wstring& fileName) const
+{
+    try
+    {
+        if (!FileExists(fileName)) return false;
+
+        wstring backupName = m_BackupDirectory + GetFileNameWithoutExtension(fileName) +
+            L"_backup_" + GenerateTimestampedFileName(L"") + L".txt";
+
+        filesystem::copy_file(fileName, backupName);
+        LogError("Backup created: " + string(backupName.begin(), backupName.end()));
+        return true;
+    }
+    catch (const filesystem::filesystem_error& e)
+    {
+        LogError("Failed to create backup: " + string(e.what()));
+        return false;
+    }
+}
+
+FileManager::MapStatistics FileManager::GetMapStatistics(const wstring& fileName) const
+{
+    MapStatistics stats{};
+
+    if (!FileExists(fileName)) return stats;
+
+    try
+    {
+        TileMapSaveData mapData;
+        // const_cast 제거하고 임시 FileManager 인스턴스 사용
+        FileManager* nonConstThis = const_cast<FileManager*>(this);
+        if (nonConstThis->LoadTileMap(fileName, mapData))
+        {
+            stats.totalTiles = 0;
+            stats.colliderCount = 0;
+
+            for (int y = 0; y < mapData.gridHeight; ++y)
+            {
+                for (int x = 0; x < mapData.gridWidth; ++x)
+                {
+                    // Ground 레이어 통계
+                    if (mapData.groundLayer[y][x] > 0)
+                    {
+                        stats.totalTiles++;
+                        stats.tileUsageCount[mapData.groundLayer[y][x]]++;
+                    }
+
+                    // UpperGround 레이어 통계
+                    if (mapData.upperGroundLayer[y][x] > 0)
+                    {
+                        stats.totalTiles++;
+                        stats.tileUsageCount[mapData.upperGroundLayer[y][x]]++;
+                    }
+
+                    // Collider 레이어 통계
+                    if (mapData.colliderLayer[y][x])
+                    {
+                        stats.colliderCount++;
+                    }
+                }
+            }
+
+            stats.uniqueTileCount = stats.tileUsageCount.size();
+        }
+
+        // 파일 크기
+        stats.fileSize = filesystem::file_size(fileName);
+    }
+    catch (const exception& e)
+    {
+        LogError("Error calculating map statistics: " + string(e.what()));
+    }
+
+    return stats;
+}
+
+bool FileManager::ParseRoomInfo(const string& line, MapData::RoomInfo& roomInfo) const
+{
+    return false;
+}
+
+bool FileManager::ParseTileData(const string& line, MapData::TileData& tileData) const
+{
+    return false;
+}
+
+void FileManager::LogError(const string& message) const
+{
+    if (m_LogFile.is_open())
+    {
+        auto now = chrono::system_clock::now();
+        auto time_t = chrono::system_clock::to_time_t(now);
+
+        // localtime_s 사용으로 안전하게 변경
+        tm timeStruct;
+        localtime_s(&timeStruct, &time_t);
+
+        m_LogFile << "[" << put_time(&timeStruct, "%Y-%m-%d %H:%M:%S") << "] "
+            << message << endl;
+        m_LogFile.flush();
+    }
+
+    cout << "[FileManager] " << message << endl;
+}
+
+void FileManager::LogWarning(const string& message) const
+{
+    LogError("[WARNING] " + message);
+}
+
+wstring FileManager::GenerateTimestampedFileName(const wstring& baseName) const
+{
+    auto now = chrono::system_clock::now();
+    auto time_t = chrono::system_clock::to_time_t(now);
+
+    // localtime_s 사용으로 안전하게 변경
+    tm timeStruct;
+    localtime_s(&timeStruct, &time_t);
+
+    wstringstream ss;
+    ss << baseName << put_time(&timeStruct, L"%Y%m%d_%H%M%S");
+    return ss.str();
+}
+
+bool FileManager::DeleteMapFile(const wstring& fileName) const
+{
+    try
+    {
+        if (FileExists(fileName))
+        {
+            filesystem::remove(fileName);
+            LogError("File deleted: " + string(fileName.begin(), fileName.end()));
+            return true;
+        }
+        return false;
+    }
+    catch (const filesystem::filesystem_error& e)
+    {
+        LogError("Failed to delete file: " + string(e.what()));
+        return false;
+    }
+}
+
+bool FileManager::RestoreBackup(const wstring& backupFileName, const wstring& targetFileName) const
+{
+    try
+    {
+        if (!FileExists(backupFileName))
+        {
+            LogError("Backup file does not exist: " + string(backupFileName.begin(), backupFileName.end()));
+            return false;
+        }
+
+        filesystem::copy_file(backupFileName, targetFileName, filesystem::copy_options::overwrite_existing);
+        LogError("Backup restored: " + string(backupFileName.begin(), backupFileName.end()) +
+            " -> " + string(targetFileName.begin(), targetFileName.end()));
+        return true;
+    }
+    catch (const filesystem::filesystem_error& e)
+    {
+        LogError("Failed to restore backup: " + string(e.what()));
+        return false;
+    }
+}
+
+void FileManager::CleanOldBackups(const wstring& directory, int keepDays) const
+{
+    try
+    {
+        if (!filesystem::exists(directory)) return;
+
+        auto cutoffTime = chrono::system_clock::now() - chrono::hours(24 * keepDays);
+        int deletedCount = 0;
+
+        for (const auto& entry : filesystem::directory_iterator(directory))
+        {
+            if (entry.is_regular_file())
+            {
+                wstring fileName = entry.path().filename().wstring();
+                if (fileName.find(L"_backup_") != wstring::npos)
+                {
+                    auto fileTime = entry.last_write_time();
+                    auto sctp = chrono::time_point_cast<chrono::system_clock::duration>(
+                        fileTime - filesystem::file_time_type::clock::now() + chrono::system_clock::now());
+
+                    if (sctp < cutoffTime)
+                    {
+                        filesystem::remove(entry.path());
+                        deletedCount++;
+                    }
+                }
+            }
+        }
+
+        LogError("Cleaned " + to_string(deletedCount) + " old backup files");
+    }
+    catch (const filesystem::filesystem_error& e)
+    {
+        LogError("Error cleaning old backups: " + string(e.what()));
+    }
+}
+
+bool FileManager::ConvertOldMapFormat(const wstring& oldFileName, const wstring& newFileName)
+{
+    // 이전 버전 맵 파일을 새로운 타일 ID 형식으로 변환
+    if (!FileExists(oldFileName))
+    {
+        LogError("Old map file does not exist: " + string(oldFileName.begin(), oldFileName.end()));
+        return false;
+    }
+
+    try
+    {
+        ifstream oldFile(oldFileName);
+        if (!oldFile.is_open()) return false;
+
+        TileMapSaveData convertedData;
+        convertedData.roomType = 1;
+        convertedData.gridWidth = 50;
+        convertedData.gridHeight = 50;
+        convertedData.canSpawnMonsters = true;
+        memset(convertedData.doors, false, sizeof(convertedData.doors));
+        convertedData.doors[0] = true; // 기본적으로 북쪽 문만 열려있음
+
+        string line;
+        while (getline(oldFile, line))
+        {
+            if (line.empty() || line[0] == '#') continue;
+
+            // 기존 형식 파싱 로직
+            if (line.find("T=") == 0)
+            {
+                // 기존: T=layer,x,y,1 (모든 타일이 1로 저장됨)
+                // 새로운: T=layer,x,y,tileID (실제 타일 ID 저장)
+
+                stringstream ss(line.substr(2));
+                string token;
+                vector<int> values;
+
+                while (getline(ss, token, ','))
+                {
+                    values.push_back(stoi(token));
+                }
+
+                if (values.size() == 4)
+                {
+                    int layer = values[0];
+                    int x = values[1];
+                    int y = values[2];
+                    int oldValue = values[3];
+
+                    // 범위 체크
+                    if (x >= 0 && x < convertedData.gridWidth &&
+                        y >= 0 && y < convertedData.gridHeight)
+                    {
+                        if (layer == 0 || layer == 1) // Ground/UpperGround
+                        {
+                            // 기존 파일에서는 모든 타일이 1로 저장되어 있으므로
+                            // 기본 타일 ID로 변환 (실제로는 사용자가 수동으로 수정해야 함)
+                            int defaultTileID = (layer == 0) ? 1 : 2; // Ground는 1, UpperGround는 2
+
+                            if (layer == 0)
+                                convertedData.groundLayer[y][x] = defaultTileID;
+                            else
+                                convertedData.upperGroundLayer[y][x] = defaultTileID;
+                        }
+                        else if (layer == 2) // Collider
+                        {
+                            convertedData.colliderLayer[y][x] = (oldValue == 1);
+                        }
+                    }
+                }
+            }
+        }
+
+        oldFile.close();
+
+        // 변환된 데이터를 새 형식으로 저장
+        bool result = SaveTileMap(newFileName, convertedData);
+
+        if (result)
+        {
+            LogError("Map converted successfully: " + string(oldFileName.begin(), oldFileName.end()) +
+                " -> " + string(newFileName.begin(), newFileName.end()));
+            LogWarning("Converted map uses default tile IDs. Please review and update manually.");
+        }
+
+        return result;
+    }
+    catch (const exception& e)
+    {
+        LogError("Error converting map format: " + string(e.what()));
+        return false;
+    }
+}
+
+wstring FileManager::GetFileExtension(const wstring& fileName) const
+{
+    filesystem::path path(fileName);
+    return path.extension().wstring();
+}
+
+wstring FileManager::GetFileNameWithoutExtension(const wstring& fileName) const
+{
+    return wstring();
 }

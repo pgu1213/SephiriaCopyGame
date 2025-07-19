@@ -1,37 +1,22 @@
 #pragma once
-#include "../Camera/Camera.h"
+#include "../../Managers/SingletonManager/SingletonManager.h"
 
-enum class TileType
+struct TileInfo
 {
-    EMPTY = 0,
-    FLOOR = 1,
-    WALL = 2,
-    CLIFF = 3,
-    MONSTER_SPAWN = 4,
-    MONSTER_MOVE = 5,
-    DOOR_NORTH = 6,
-    DOOR_SOUTH = 7,
-    DOOR_EAST = 8,
-    DOOR_WEST = 9
+    int tileID;      // 타일의 ID (리소스 매니저의 타일 ID와 매칭)
+    wstring fileName; // 타일 파일명
+};
+
+struct ColliderTile
+{
+    bool hasCollider; // 콜라이더가 있는지 여부
 };
 
 enum class LayerType
 {
-    BACKGROUND = 0,
-    COLLISION = 1,
-    DECORATION = 2,
-    INTERACTION = 3,
-    MAX_LAYERS = 4
-};
-
-struct TileData
-{
-    TileType type;
-    int spriteIndex; // ResourceManager에서의 스프라이트 인덱스
-    bool isWalkable;
-    bool canSpawnMonster;
-
-    TileData() : type(TileType::EMPTY), spriteIndex(-1), isWalkable(true), canSpawnMonster(false) {}
+    GROUND = 0,      // 1번 레이어: Ground
+    UPPER_GROUND = 1, // 2번 레이어: UpperGround  
+    COLLIDER = 2     // 3번 레이어: Collider
 };
 
 class TileMapEditor
@@ -41,56 +26,166 @@ public:
     ~TileMapEditor();
 
 public:
-    void Init(int gridWidth, int gridHeight);
-    void Update(Camera* camera);
-    void Render(HDC hdc, Camera* camera);
-
-    // 그리드 기능
-    void DrawGrid(HDC hdc, Camera* camera);
+    void Initialize();
+    void Update();
+    void Render(HDC hdc);
+    void HandleInput();
+    void SetCurrentLayer(LayerType layer) { m_CurrentLayer = layer; }
+    LayerType GetCurrentLayer() const { return m_CurrentLayer; }
+    void SetSelectedTileID(int tileID);
+    void SaveMap(const wstring& fileName);
+    void LoadMap(const wstring& fileName);
+    void ClearMap();
     void SetGridSize(int width, int height);
 
-    // 그리기 기능
-    void PaintTile(int gridX, int gridY, TileType tileType, int spriteIndex);
-    void EraseTile(int gridX, int gridY);
+    // 성능 최적화용 메서드
+    void SetViewport(int x, int y, int width, int height);
+    void UpdateVisibleTiles();
 
-    // 타일 속성 확인
-    TileData* GetTileAt(int gridX, int gridY);
-    TileData* GetTileAtLayer(int layer, int gridX, int gridY);
-    void ShowTileProperties(int gridX, int gridY);
-
-    // 레이어 기능
-    void SetCurrentLayer(LayerType layer);
-    LayerType GetCurrentLayer() const { return m_CurrentLayer; }
-    void ToggleLayerVisibility(LayerType layer);
-
-    // 좌표 변환
-    void ScreenToGrid(int screenX, int screenY, int& gridX, int& gridY, Camera* camera);
-    POINT GridToScreen(int gridX, int gridY, Camera* camera);
-
-    // 선택된 타일 설정
-    void SetSelectedTile(TileType type, int spriteIndex);
+    // 렌더링 최적화
+    void RenderLayer(HDC hdc, LayerType layer);
+    void RenderVisibleTiles(HDC hdc);
 
 private:
-    static const int TILE_SIZE = 16;
-    static const int MAX_GRID_WIDTH = 100;
-    static const int MAX_GRID_HEIGHT = 100;
+    void PlaceTile(int x, int y);
+    void RemoveTile(int x, int y);
+    void InvalidateRegion(int x, int y, int width, int height, LayerType layer);
+    void UpdateRenderBatches();
+    void RenderWithBatching(HDC hdc);
+    bool IsValidPosition(int x, int y) const;
+    void RenderGrid(HDC hdc);
+    void RenderColliderLayer(HDC hdc);
+    int GetTileIDFromResourceManager(const wstring& fileName);
+    wstring GetFileNameFromTileID(int tileID);
 
-    TileData m_TileMap[static_cast<int>(LayerType::MAX_LAYERS)][MAX_GRID_WIDTH][MAX_GRID_HEIGHT];
-    int m_GridWidth;
-    int m_GridHeight;
+private:
+    // 맵 데이터 - 레이어별로 분리
+    vector<vector<TileInfo>> m_GroundLayer;        // 레이어 1: Ground (타일 ID 저장)
+    vector<vector<TileInfo>> m_UpperGroundLayer;   // 레이어 2: UpperGround (타일 ID 저장)  
+    vector<vector<ColliderTile>> m_ColliderLayer;  // 레이어 3: Collider (0/1 저장)
 
+    // 에디터 상태
     LayerType m_CurrentLayer;
-    bool m_LayerVisible[static_cast<int>(LayerType::MAX_LAYERS)];
+    int m_SelectedTileID;
+    wstring m_SelectedTileFileName;
 
-    // 현재 선택된 타일
-    TileType m_SelectedTileType;
-    int m_SelectedSpriteIndex;
+    // 맵 크기
+    int m_MapWidth;
+    int m_MapHeight;
+    int m_TileSize;
 
-    // 그리드 표시 옵션
+    // 카메라/뷰포트 (성능 최적화용)
+    int m_ViewportX, m_ViewportY;
+    int m_ViewportWidth, m_ViewportHeight;
+    int m_VisibleStartX, m_VisibleStartY;
+    int m_VisibleEndX, m_VisibleEndY;
+
+    // 성능 최적화 관련
+    bool m_NeedUpdate;
+
+    struct RenderBatch
+    {
+        vector<RECT> positions;
+        Gdiplus::Bitmap* bitmap;
+        int tileID;
+    };
+
+    map<int, RenderBatch> m_RenderBatches[3]; // 레이어별 배치
+
+
+    // 더티 영역 관리
+    struct DirtyRegion
+    {
+        int x, y, width, height;
+        LayerType layer;
+    };
+
+    vector<DirtyRegion> m_DirtyRegions; // 업데이트가 필요한 영역들
+
+    // 타일 ID와 파일명 매핑 (리소스 매니저와 동기화)
+    map<int, wstring> m_TileIDToFileName;
+    map<wstring, int> m_FileNameToTileID;
+
+    // UI 관련
     bool m_ShowGrid;
-    bool m_ShowTileProperties;
+    bool m_ShowColliders;
 
-    void HandleInput(Camera* camera);
-    void DrawTile(HDC hdc, int gridX, int gridY, const TileData& tile, Camera* camera);
-    void DrawLayerIndicator(HDC hdc);
+    bool m_BatchesDirty;
+};
+
+// 메모리 풀링 시스템 추가 (큰 맵을 위한 최적화)
+class TileMemoryPool
+{
+private:
+    vector<TileInfo*> m_FreeTileInfos;
+    vector<ColliderTile*> m_FreeColliderTiles;
+    static const int POOL_SIZE = 10000;
+
+public:
+    TileMemoryPool()
+    {
+        // 미리 메모리 할당
+        for (int i = 0; i < POOL_SIZE; ++i)
+        {
+            m_FreeTileInfos.push_back(new TileInfo{ 0, L"" });
+            m_FreeColliderTiles.push_back(new ColliderTile{ false });
+        }
+    }
+
+    ~TileMemoryPool()
+    {
+        for (auto* tile : m_FreeTileInfos)
+            delete tile;
+        for (auto* collider : m_FreeColliderTiles)
+            delete collider;
+    }
+
+    TileInfo* GetTileInfo()
+    {
+        if (!m_FreeTileInfos.empty())
+        {
+            TileInfo* tile = m_FreeTileInfos.back();
+            m_FreeTileInfos.pop_back();
+            tile->tileID = 0;
+            tile->fileName = L"";
+            return tile;
+        }
+        return new TileInfo{ 0, L"" };
+    }
+
+    void ReturnTileInfo(TileInfo* tile)
+    {
+        if (m_FreeTileInfos.size() < POOL_SIZE)
+        {
+            m_FreeTileInfos.push_back(tile);
+        }
+        else
+        {
+            delete tile;
+        }
+    }
+
+    ColliderTile* GetColliderTile()
+    {
+        if (!m_FreeColliderTiles.empty())
+        {
+            ColliderTile* collider = m_FreeColliderTiles.back();
+            m_FreeColliderTiles.pop_back();
+            collider->hasCollider = false;
+            return collider;
+        }
+        return new ColliderTile{ false };
+    }
+
+    void ReturnColliderTile(ColliderTile* collider)
+    {
+        if (m_FreeColliderTiles.size() < POOL_SIZE)
+        {
+            m_FreeColliderTiles.push_back(collider);
+        }
+        else
+        {
+            delete collider;
+        }
+    }
 };

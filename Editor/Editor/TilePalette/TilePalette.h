@@ -1,7 +1,12 @@
 #pragma once
-#include "../../Managers/ResourceManager/ResourceManager.h"
 
-class TileMapEditor;
+struct TilePaletteItem
+{
+    int tileID;
+    wstring fileName;
+    Gdiplus::Bitmap* bitmap;
+    RECT displayRect;
+};
 
 class TilePalette
 {
@@ -10,51 +15,36 @@ public:
     ~TilePalette();
 
 public:
-    void Init(TileMapEditor* tileMapEditor);
+    void Initialize();
     void Update();
     void Render(HDC hdc);
+    void HandleInput();
 
-    void SetPosition(int x, int y);
-    void SetSize(int width, int height);
-
-    // 타일 선택
-    void SelectTile(int index);
-    int GetSelectedTileIndex() const { return m_SelectedTileIndex; }
-
-    // 페이지 기능 (타일이 많을 경우)
-    void NextPage();
-    void PrevPage();
-    void SetTilesPerPage(int tilesPerPage);
+    int GetSelectedTileID() const { return m_SelectedTileID; }
+    wstring GetSelectedTileFileName() const;
+    void SetPosition(int x, int y) { m_PosX = x; m_PosY = y; }
+    void SetSize(int width, int height) { m_Width = width; m_Height = height; }
 
 private:
-    static const int DEFAULT_TILE_SIZE = 32; // 팔레트에서의 타일 크기
-    static const int TILES_PER_ROW = 8;
-    static const int TILES_PER_PAGE = 32;
+    void LoadTileItems();
+    void UpdateLayout();
+    void RenderTileGrid(HDC hdc);
+    void RenderSelection(HDC hdc);
+    int GetTileIndexAt(int x, int y);
 
-    TileMapEditor* m_pTileMapEditor;
+private:
+    vector<TilePaletteItem> m_TileItems;
+    int m_SelectedTileID;
+    int m_SelectedIndex;
 
-    // 팔레트 위치 및 크기
-    int m_PosX;
-    int m_PosY;
-    int m_Width;
-    int m_Height;
+    // UI 관련
+    int m_PosX, m_PosY;
+    int m_Width, m_Height;
+    int m_TileDisplaySize;
+    int m_TilesPerRow;
+    int m_ScrollOffset;
 
-    // 타일 선택 관련
-    int m_SelectedTileIndex;
-    int m_CurrentPage;
-    int m_TilesPerPage;
-
-    // 타일 파일명 목록
-    vector<wstring> m_TileFileNames;
-
-    void HandleInput();
-    void DrawTileGrid(HDC hdc);
-    void DrawSelectedHighlight(HDC hdc);
-    void DrawPageInfo(HDC hdc);
-    void DrawPageButtons(HDC hdc, int totalPages);
-    bool CheckPageButtons(int mouseX, int mouseY);
-
-    // 좌표 변환
-    int GetTileIndexFromPosition(int x, int y);
-    RECT GetTileRect(int index);
+    // 스크롤 관련
+    int m_MaxScrollOffset;
+    bool m_NeedUpdateLayout;
 };

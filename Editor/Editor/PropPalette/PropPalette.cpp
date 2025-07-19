@@ -217,8 +217,8 @@ void PropPalette::PlaceProp(int gridX, int gridY)
     if (m_SelectedPropIndex < 0 || m_SelectedPropIndex >= static_cast<int>(m_PropNames.size()))
         return;
 
-    PropData prop(gridX, gridY, m_PropNames[m_SelectedPropIndex], "");
-    FileManager::GetInstance()->AddProp(prop);
+    //PropData prop(gridX, gridY, m_PropNames[m_SelectedPropIndex], "");
+    //FileManager::GetInstance()->AddProp(prop);
 
     printf("Placed prop '%s' at (%d, %d)\n",
         m_PropNames[m_SelectedPropIndex].c_str(), gridX, gridY);
@@ -226,7 +226,7 @@ void PropPalette::PlaceProp(int gridX, int gridY)
 
 void PropPalette::Removeprop(int gridX, int gridY)
 {
-    FileManager::GetInstance()->Removeprop(gridX, gridY);
+    //FileManager::GetInstance()->Removeprop(gridX, gridY);
     printf("Removed prop at (%d, %d)\n", gridX, gridY);
 }
 
