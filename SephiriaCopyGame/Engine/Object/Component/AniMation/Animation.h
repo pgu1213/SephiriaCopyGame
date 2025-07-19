@@ -1,24 +1,36 @@
 #pragma once
 #include <Engine/Object/Component/Component.h>
 
+class SpriteRenderer;
+
 struct AnimationFrame
 {
-    wstring spriteName;  // 리소스 매니저에서 로드된 스프라이트 이름
-    float duration;      // 해당 프레임의 지속 시간 (초)
+    std::wstring spriteName;  // 스프라이트 이름
+    RECT sourceRect;          // 스프라이트 시트에서의 영역 (선택사항)
+    float duration;           // 이 프레임의 지속 시간
 
-    AnimationFrame(const wstring& name = L"", float dur = 0.1f)
-        : spriteName(name), duration(dur) {
+    AnimationFrame(const std::wstring& name, float dur)
+        : spriteName(name), duration(dur)
+    {
+        sourceRect = { 0, 0, 0, 0 }; // 전체 이미지 사용
+    }
+
+    AnimationFrame(const std::wstring& name, const RECT& rect, float dur)
+        : spriteName(name), sourceRect(rect), duration(dur) {
     }
 };
 
 struct AnimationClip
 {
-    wstring clipName;                    // 애니메이션 클립 이름
-    vector<AnimationFrame> frames;       // 프레임들
-    bool isLoop;                         // 반복 재생 여부
+    std::string name;
+    std::vector<AnimationFrame> frames;
+    bool loop;
 
-    AnimationClip(const wstring& name = L"", bool loop = true)
-        : clipName(name), isLoop(loop) {
+    // 기본 생성자 추가 (std::map에서 필요)
+    AnimationClip() : name(""), loop(true) {}
+
+    AnimationClip(const std::string& clipName, bool isLoop = true)
+        : name(clipName), loop(isLoop) {
     }
 };
 
@@ -27,62 +39,42 @@ class Animation : public Component
 public:
     Animation(Object* owner);
     Animation(const Animation& other); // 복사 생성자
-    virtual ~Animation();
-
+    void OnDestroy() override;
 protected:
     Animation* CloneImpl() const override;
-
 public:
     void CopyFrom(const IPrototypeable* source) override;
     void Update(float deltaTime) override;
-    void Render(HDC hdc) override;
 
 public:
-    // 애니메이션 클립 관리
-    void AddAnimationClip(const AnimationClip& clip);
-    void AddAnimationClip(const wstring& clipName, const vector<wstring>& spriteNames,
-        float frameDuration = 0.1f, bool isLoop = true);
-    void RemoveAnimationClip(const wstring& clipName);
-
     // 애니메이션 재생 제어
-    void PlayAnimation(const wstring& clipName, bool forceRestart = false);
-    void StopAnimation();
-    void PauseAnimation();
-    void ResumeAnimation();
+    void AddClip(const AnimationClip& clip);
+    void PlayClip(const std::string& clipName);
+    void Stop();
+    void Pause();
+    void Resume();
 
-    // 애니메이션 상태 확인
-    bool IsPlaying() const { return m_IsPlaying && !m_IsPaused; }
+    // 애니메이션 상태
+    bool IsPlaying() const { return m_IsPlaying; }
     bool IsPaused() const { return m_IsPaused; }
-    bool IsAnimationFinished() const { return m_IsFinished; }
-    wstring GetCurrentClipName() const { return m_CurrentClipName; }
-    int GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
+    std::string GetCurrentClipName() const { return m_CurrentClipName; }
 
-    // 애니메이션 설정
-    void SetPlaybackSpeed(float speed) { m_PlaybackSpeed = speed; }
-    float GetPlaybackSpeed() const { return m_PlaybackSpeed; }
-
-    // 이벤트 콜백 설정
-    void SetOnAnimationFinished(function<void()> callback) { m_OnAnimationFinished = callback; }
-    void SetOnFrameChanged(function<void(int)> callback) { m_OnFrameChanged = callback; }
+    // 애니메이션 속도 조절
+    void SetSpeed(float speed) { m_Speed = speed; }
+    float GetSpeed() const { return m_Speed; }
 
 private:
-    void UpdateAnimation(float deltaTime);
-    void ChangeFrame(int frameIndex);
-    AnimationClip* GetClip(const wstring& clipName);
+    void UpdateCurrentFrame();
+    SpriteRenderer* GetSpriteRenderer();
 
 private:
-    map<wstring, AnimationClip> m_AnimationClips;  // 애니메이션 클립들
-    wstring m_CurrentClipName;                     // 현재 재생 중인 클립 이름
+    std::map<std::string, AnimationClip> m_Clips;
+    SpriteRenderer* m_pSpriteRenderer;
 
-    int m_CurrentFrameIndex;                       // 현재 프레임 인덱스
-    float m_CurrentFrameTime;                      // 현재 프레임의 경과 시간
-    float m_PlaybackSpeed;                         // 재생 속도 배율
-
-    bool m_IsPlaying;                              // 재생 중인지 여부
-    bool m_IsPaused;                               // 일시정지 상태인지 여부
-    bool m_IsFinished;                             // 애니메이션이 끝났는지 여부
-
-    // 이벤트 콜백
-    function<void()> m_OnAnimationFinished;        // 애니메이션 완료 시 호출
-    function<void(int)> m_OnFrameChanged;          // 프레임 변경 시 호출
+    std::string m_CurrentClipName;
+    int m_CurrentFrameIndex;
+    float m_CurrentFrameTime;
+    float m_Speed;
+    bool m_IsPlaying;
+    bool m_IsPaused;
 };

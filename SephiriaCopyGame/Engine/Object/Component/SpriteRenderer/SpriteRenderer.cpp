@@ -20,8 +20,6 @@ SpriteRenderer::SpriteRenderer(Object* owner)
     , m_Depth(0.0f)
     , m_SortingOrder(0)
     , m_BlendMode(0)
-    , m_IsAnimationPlaying(false)
-    , m_IsAnimationPaused(false)
     , m_FrameCount(1)
     , m_CurrentFrame(0)
     , m_FrameWidth(0)
@@ -52,8 +50,6 @@ SpriteRenderer::SpriteRenderer(const SpriteRenderer& other)
     , m_Depth(0.0f)
     , m_SortingOrder(other.m_SortingOrder)
     , m_BlendMode(0)
-    , m_IsAnimationPlaying(false)
-    , m_IsAnimationPaused(false)
     , m_FrameCount(1)
     , m_CurrentFrame(0)
     , m_FrameWidth(0)
@@ -94,8 +90,6 @@ void SpriteRenderer::CopyFrom(const IPrototypeable* source)
 		m_RenderLayer = sourceSprite->m_RenderLayer;
 		m_Depth = sourceSprite->m_Depth;
 		m_BlendMode = sourceSprite->m_BlendMode;
-        m_IsAnimationPlaying = false;
-		m_IsAnimationPaused = sourceSprite->m_IsAnimationPaused;
 		m_FrameCount = sourceSprite->m_FrameCount;
         m_CurrentFrame = 0;
 		m_FrameWidth = sourceSprite->m_FrameWidth;
@@ -116,12 +110,6 @@ void SpriteRenderer::Init()
 void SpriteRenderer::Update(float deltaTime)
 {
     Component::Update(deltaTime);
-
-    if (m_IsAnimationPlaying && !m_IsAnimationPaused)
-    {
-        UpdateAnimation(deltaTime);
-        UpdateFrameAnimation(deltaTime);
-    }
 
     if (m_TransformDirty)
     {
@@ -172,39 +160,6 @@ void SpriteRenderer::SetSprite(Gdiplus::Bitmap* bitmap)
     m_TransformDirty = true;
 }
 
-void SpriteRenderer::UpdateAnimation(float deltaTime)
-{
-    // Custom animation logic can be added here
-    // This is where you'd integrate with an Animation component or system
-}
-
-void SpriteRenderer::UpdateFrameAnimation(float deltaTime)
-{
-    if (m_FrameCount <= 1)
-        return;
-
-    m_AnimationTimer += deltaTime;
-
-    if (m_AnimationTimer >= m_FrameTime)
-    {
-        m_AnimationTimer = 0.0f;
-        m_CurrentFrame++;
-
-        if (m_CurrentFrame >= m_FrameCount)
-        {
-            if (m_IsLooping)
-            {
-                m_CurrentFrame = 0;
-            }
-            else
-            {
-                m_CurrentFrame = m_FrameCount - 1;
-                m_IsAnimationPlaying = false;
-            }
-        }
-    }
-}
-
 void SpriteRenderer::CalculateTransform()
 {
     m_TransformMatrix.Reset();
@@ -231,10 +186,8 @@ void SpriteRenderer::RenderSprite(HDC hdc)
     graphics.SetInterpolationMode(Gdiplus::InterpolationModeNearestNeighbor);
     graphics.SetPixelOffsetMode(Gdiplus::PixelOffsetModeHalf);
 
-    // Apply transformations
     ApplyTransformations(graphics);
 
-    // Set opacity
     Gdiplus::ImageAttributes imageAttr;
     if (m_Opacity < 1.0f)
     {
@@ -277,7 +230,43 @@ void SpriteRenderer::RenderSprite(HDC hdc)
 
 void SpriteRenderer::ApplyTransformations(Gdiplus::Graphics& graphics)
 {
-    graphics.SetTransform(&m_TransformMatrix);
+    if (!m_pOwner) return;
+
+    // Object의 Transform 정보 가져오기
+    const Transform& transform = m_pOwner->GetTransform();
+
+    // 변환 행렬 생성
+    Gdiplus::Matrix matrix;
+
+    // 1. 이동 (Translation) - Object의 실제 위치 적용
+    matrix.Translate(transform.position.x, transform.position.y);
+
+    // 2. 회전 (Rotation) - 회전 중심점을 고려
+    if (transform.rotation != 0.0f)
+    {
+        matrix.Rotate(transform.rotation);
+    }
+
+    // 3. 스케일 (Scale)
+    if (transform.scale.x != 1.0f || transform.scale.y != 1.0f)
+    {
+        matrix.Scale(transform.scale.x, transform.scale.y);
+    }
+
+    // 4. FlipX 처리
+    if (m_FlipX)
+    {
+        matrix.Scale(-1.0f, 1.0f);
+    }
+
+    // 5. FlipY 처리 (필요한 경우)
+    if (m_FlipY)
+    {
+        matrix.Scale(1.0f, -1.0f);
+    }
+
+    // Graphics에 변환 행렬 적용
+    graphics.SetTransform(&matrix);
 }
 
 Vector2 SpriteRenderer::CalculateAnchoredPosition() const
@@ -302,48 +291,22 @@ RECT SpriteRenderer::CalculateCurrentFrameRect() const
     return { frameX, frameY, frameX + frameWidth, frameY + frameHeight };
 }
 
-void SpriteRenderer::PlayAnimation(const wstring& animationName)
+void SpriteRenderer::SetSpriteByName(const std::wstring& spriteName)
 {
-    m_CurrentAnimationName = animationName;
-    m_IsAnimationPlaying = true;
-    m_IsAnimationPaused = false;
-    m_AnimationTimer = 0.0f;
-    m_CurrentFrame = 0;
-}
-
-void SpriteRenderer::StopAnimation()
-{
-    m_IsAnimationPlaying = false;
-    m_IsAnimationPaused = false;
-    m_AnimationTimer = 0.0f;
-    m_CurrentFrame = 0;
-}
-
-void SpriteRenderer::PauseAnimation()
-{
-    m_IsAnimationPaused = true;
-}
-
-void SpriteRenderer::ResumeAnimation()
-{
-    m_IsAnimationPaused = false;
+    m_pSprite = ResourceManager::GetInstance()->GetSprite(spriteName);
 }
 
 Vector2 SpriteRenderer::GetWorldPosition() const
 {
-    // If attached to an object, get its world position
     if (GetOwner())
     {
-        // Assuming Object has GetPosition method
-        // return GetOwner()->GetPosition() + m_Position;
+
     }
     return m_Position;
 }
 
 Vector2 SpriteRenderer::GetScreenPosition() const
 {
-    // Convert world position to screen position using camera
-    // This would need camera integration
     return GetWorldPosition();
 }
 

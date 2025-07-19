@@ -1,61 +1,6 @@
-﻿  pch.cpp
-  Editor.cpp
-  Camera.cpp
-  MainEditor.cpp
-C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(285,53): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(291,52): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(300,51): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(304,51): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  PropPalette.cpp
-C:\Dev\SephiriaCopyGame\Editor\Editor\PropPalette\PropPalette.cpp(86,56): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\PropPalette\PropPalette.cpp(143,66): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\PropPalette\PropPalette.cpp(194,79): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  TileMapEditor.cpp
-C:\Dev\SephiriaCopyGame\Editor\Editor\TileMapEditor\TileMapEditor.cpp(284,44): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\TileMapEditor\TileMapEditor.cpp(294,62): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\TileMapEditor\TileMapEditor.cpp(400,18): warning C4244: '초기화 중': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\TileMapEditor\TileMapEditor.cpp(401,18): warning C4244: '초기화 중': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  TilePalette.cpp
-C:\Dev\SephiriaCopyGame\Editor\Editor\TilePalette\TilePalette.cpp(155,66): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\TilePalette\TilePalette.cpp(204,59): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\TilePalette\TilePalette.cpp(218,79): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\xutility(4813,18): warning C4244: '=': 'wchar_t'에서 'char'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  (소스 파일 'Editor/TilePalette/TilePalette.cpp'을(를) 컴파일하는 중)
-      C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\xutility(4813,18):
-      템플릿 인스턴스화 컨텍스트(가장 오래된 인스턴스화 컨텍스트)가
-          C:\Dev\SephiriaCopyGame\Editor\Editor\TilePalette\TilePalette.cpp(214,25):
-          컴파일되는 함수 템플릿 인스턴스화 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>::basic_string<std::_String_iterator<std::_String_val<std::_Simple_types<_Elem>>>,0>(_Iter,_Iter,const _Alloc &)'에 대한 참조를 확인하세요.
-          with
-          [
-              _Elem=wchar_t,
-              _Iter=std::_String_iterator<std::_String_val<std::_Simple_types<wchar_t>>>,
-              _Alloc=std::allocator<char>
-          ]
-              C:\Dev\SephiriaCopyGame\Editor\Editor\TilePalette\TilePalette.cpp(214,25):
-              'TilePalette::DrawPageInfo'에서 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>::basic_string'에 대한 첫 번째 참조를 확인하세요.
-          C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\xstring(812,17):
-          컴파일되는 함수 템플릿 인스턴스화 'void std::basic_string<char,std::char_traits<char>,std::allocator<char>>::_Construct_from_iter<wchar_t*,wchar_t*,_Size_type>(_Iter,const _Sent,_Size)'에 대한 참조를 확인하세요.
-          with
-          [
-              _Size_type=unsigned __int64,
-              _Iter=wchar_t *,
-              _Sent=wchar_t *,
-              _Size=unsigned __int64
-          ]
-          C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\xstring(968,18):
-          컴파일되는 함수 템플릿 인스턴스화 '_OutIt *std::_Copy_n_unchecked4<wchar_t*,_Size,char*>(_InIt,_SizeTy,_OutIt)'에 대한 참조를 확인하세요.
-          with
-          [
-              _OutIt=char *,
-              _Size=unsigned __int64,
-              _InIt=wchar_t *,
-              _SizeTy=unsigned __int64
-          ]
-  
-  ConfigManager.cpp
-  FileManager.cpp
-  InputManager.cpp
-  ResourceManager.cpp
-  코드를 생성하고 있습니다...
-C:\Dev\SephiriaCopyGame\Editor\Editor.cpp(68,1): warning C4715: 'wWinMain': 모든 제어 경로에서 값을 반환하지는 않습니다.
+﻿  MainEditor.cpp
+C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(284,53): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(290,52): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(299,51): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(303,51): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
   Editor.vcxproj -> C:\Dev\SephiriaCopyGame\x64\Debug\Editor.exe

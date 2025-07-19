@@ -73,12 +73,11 @@ public:
     void SetDepth(float depth) { m_Depth = depth; }
     float GetDepth() const { return m_Depth; }
 
-    // Animation support
-    void PlayAnimation(const wstring& animationName);
-    void StopAnimation();
-    void PauseAnimation();
-    void ResumeAnimation();
-    bool IsAnimationPlaying() const { return m_IsAnimationPlaying; }
+    // 소스 영역 설정 (스프라이트 시트용)
+    void SetUseSourceRect(bool use) { m_UseSourceRect = use; }
+
+    // 스프라이트 이름으로 설정 (ResourceManager 사용)
+    void SetSpriteByName(const std::wstring& spriteName);
 
     // Frame-based animation
     void SetFrameCount(int frameCount) { m_FrameCount = frameCount; }
@@ -91,65 +90,47 @@ public:
     int GetFrameCount() const { return m_FrameCount; }
     bool IsLooping() const { return m_IsLooping; }
 
-    // Utility functions
     Vector2 GetWorldPosition() const;
     Vector2 GetScreenPosition() const;
     RECT GetBoundingRect() const;
     bool IsPointInside(const Vector2& point) const;
 
-    // Material/Shader-like effects
     void SetBlendMode(int blendMode) { m_BlendMode = blendMode; }
     int GetBlendMode() const { return m_BlendMode; }
 
-    // Sorting
     void SetSortingOrder(int order) { m_SortingOrder = order; }
     int GetSortingOrder() const { return m_SortingOrder; }
 
 private:
-    // Core rendering
-    void UpdateAnimation(float deltaTime);
-    void UpdateFrameAnimation(float deltaTime);
     void CalculateTransform();
     void RenderSprite(HDC hdc);
     void ApplyTransformations(Gdiplus::Graphics& graphics);
 
-    // Helper functions
     Vector2 CalculateAnchoredPosition() const;
     RECT CalculateCurrentFrameRect() const;
 private:
-    // Sprite data
     Gdiplus::Bitmap* m_pSprite;
     wstring m_SpriteName;
 
-    // Transform
     Vector2 m_Position;
     Vector2 m_Size;
     Vector2 m_Scale;
     float m_Rotation;
-    Vector2 m_Anchor; // 0,0 = top-left, 0.5,0.5 = center, 1,1 = bottom-right
+    Vector2 m_Anchor;
 
-    // Rendering properties
     float m_Opacity;
     bool m_IsVisible;
     bool m_FlipX;
     bool m_FlipY;
 
-    // Sprite sheet
     RECT m_SourceRect;
     bool m_UseSourceRect;
 
-    // Layering
     int m_RenderLayer;
     float m_Depth;
     int m_SortingOrder;
     int m_BlendMode;
 
-    // Animation
-    bool m_IsAnimationPlaying;
-    bool m_IsAnimationPaused;
-    wstring m_CurrentAnimationName;
-
-    // Frame animation
     int m_FrameCount;
     int m_CurrentFrame;
     int m_FrameWidth;
@@ -158,7 +139,6 @@ private:
     float m_AnimationTimer;
     bool m_IsLooping;
 
-    // Cache
     bool m_TransformDirty;
     Gdiplus::Matrix m_TransformMatrix;
 };

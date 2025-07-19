@@ -9,4 +9,5 @@ public:
 
 public:
     void Init() override;
+    void SetupPlayerAnimation(Object* player);
 };

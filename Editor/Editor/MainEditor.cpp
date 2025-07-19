@@ -31,26 +31,6 @@ void MainEditor::Initialize()
         return;
     }
 
-    // 타일 타입 빠른 선택 (단순한 0/1 방식)
-    if (!InputManager::GetInstance()->IsKeyPressed(VK_CONTROL) && !InputManager::GetInstance()->IsKeyPressed(VK_SHIFT)) // 다른 조합키와 겹치지 않게
-    {
-        if (InputManager::GetInstance()->IsKeyDown('Q'))
-        {
-            m_pTileMapEditor->SetSelectedTile(TileType::FLOOR, 0);
-            printf("Quick select: FLOOR tile (walkable)\n");
-        }
-        if (InputManager::GetInstance()->IsKeyDown('W'))
-        {
-            m_pTileMapEditor->SetSelectedTile(TileType::WALL, 0);
-            printf("Quick select: WALL tile (collision)\n");
-        }
-        if (InputManager::GetInstance()->IsKeyDown('E'))
-        {
-            m_pTileMapEditor->SetSelectedTile(TileType::EMPTY, 0);
-            printf("Quick select: EMPTY tile (erase)\n");
-        }
-    }
-
     // HDC 얻기
     m_hDC = GetDC(g_hWnd);
     if (!m_hDC)
@@ -73,10 +53,10 @@ void MainEditor::Initialize()
     m_pPropPalette->Init();
 
     // 팔레트 위치 설정
-    m_pTilePalette->SetPosition(WINCX - -600, 50);
+    m_pTilePalette->SetPosition(WINCX - 500, 50);
     m_pTilePalette->SetSize(500, 300);
 
-    m_pPropPalette->SetPosition(WINCX - -600, 370);
+    m_pPropPalette->SetPosition(WINCX - 500, 370);
     m_pPropPalette->SetSize(500, 200);
 
     m_IsInitialized = true;
@@ -91,6 +71,25 @@ void MainEditor::Update()
 
     // 입력 매니저 업데이트
     InputManager::GetInstance()->Update();
+
+    if (!InputManager::GetInstance()->IsKeyPressed(VK_CONTROL) && !InputManager::GetInstance()->IsKeyPressed(VK_SHIFT)) // 다른 조합키와 겹치지 않게
+    {
+        if (InputManager::GetInstance()->IsKeyDown('Q'))
+        {
+            m_pTileMapEditor->SetSelectedTile(TileType::FLOOR, 0);
+            printf("Quick select: FLOOR tile (walkable)\n");
+        }
+        if (InputManager::GetInstance()->IsKeyDown('W'))
+        {
+            m_pTileMapEditor->SetSelectedTile(TileType::WALL, 0);
+            printf("Quick select: WALL tile (collision)\n");
+        }
+        if (InputManager::GetInstance()->IsKeyDown('E'))
+        {
+            m_pTileMapEditor->SetSelectedTile(TileType::EMPTY, 0);
+            printf("Quick select: EMPTY tile (erase)\n");
+        }
+    }
 
     // 전역 키 입력 처리
     HandleGlobalInput();
