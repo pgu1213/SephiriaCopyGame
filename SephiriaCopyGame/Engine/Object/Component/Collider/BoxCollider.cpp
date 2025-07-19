@@ -35,8 +35,8 @@ Vector2 BoxCollider::GetCenter()
 {
     if (m_Owner)
     {
-        Transform transform;
-        m_Owner->GetTransform(transform);
+        Transform transform = m_Owner->GetTransform();
+        
         return Vector2(
             transform.position.x + m_Offset.x,
             transform.position.y + m_Offset.y

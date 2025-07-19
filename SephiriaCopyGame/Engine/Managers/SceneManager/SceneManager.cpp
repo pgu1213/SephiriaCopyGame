@@ -20,7 +20,7 @@ void SceneManager::Init()
 	RegisterScene("GameScene", make_unique<GameScene>());
 
 	// 기본 씬을 GameScene으로 설정
-	SceneLoad("GameScene");
+	SceneLoad("TitleScene");
 
 	printf("SceneManager Init Complete\n");
 }
@@ -53,6 +53,8 @@ bool SceneManager::SceneLoad(const string& sceneName)
 	// 새로운 씬으로 변경
 	m_CurrentScene = it->second.get();
 	m_CurrentSceneName = sceneName;
+
+	m_CurrentScene->Init();
 
 	return true;
 }

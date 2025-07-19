@@ -85,8 +85,7 @@ void Animation::Render(HDC hdc)
         return;
 
     // 오브젝트의 Transform 정보 가져오기
-    Transform transform;
-    m_pOwner->GetTransform(transform);
+    Transform transform = m_pOwner->GetTransform();
 
     // 스프라이트 렌더링
     Graphics graphics(hdc);

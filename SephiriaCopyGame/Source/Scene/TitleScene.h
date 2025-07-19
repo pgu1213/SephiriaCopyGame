@@ -9,4 +9,5 @@ public:
 
 public:
     void Init() override;
+	void SetupUI(); // UI 설정 함수
 };

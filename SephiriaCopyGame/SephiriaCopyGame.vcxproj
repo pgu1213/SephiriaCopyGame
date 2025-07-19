@@ -134,6 +134,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Engine\Object\Component\Camera\Camera.h" />
     <ClInclude Include="Engine\Object\Component\AniMation\Animation.h" />
     <ClInclude Include="Engine\Object\Component\Collider\CircleCollider.h" />
     <ClInclude Include="Engine\Object\Component\Collider\BoxCollider.h" />
@@ -161,8 +162,12 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Engine\Managers\TimeManager\TimeManager.h" />
     <ClInclude Include="Source\Scene\TitleScene.h" />
+    <ClInclude Include="Engine\Object\UI\UI.h" />
+    <ClInclude Include="Engine\Object\UI\Button\UIButton.h" />
+    <ClInclude Include="Engine\Managers\UIManager\UIManager.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Engine\Object\Component\Camera\Camera.cpp" />
     <ClCompile Include="Engine\Object\Component\AniMation\Animation.cpp" />
     <ClCompile Include="Engine\Object\Component\Collider\CircleCollider.cpp" />
     <ClCompile Include="Engine\Object\Component\Collider\BoxCollider.cpp" />
@@ -191,6 +196,9 @@
     <ClCompile Include="Engine\Managers\PrototypeManager\PrototypeFactory\PrototypeFactory.cpp" />
     <ClCompile Include="Engine\Scene\Scene.cpp" />
     <ClCompile Include="Source\Scene\TitleScene.cpp" />
+    <ClCompile Include="Engine\Object\UI\UI.cpp" />
+    <ClCompile Include="Engine\Object\UI\Button\UIButton.cpp" />
+    <ClCompile Include="Engine\Managers\UIManager\UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="SephiriaCopyGame.rc" />
