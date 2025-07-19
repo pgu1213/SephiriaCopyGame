@@ -11,8 +11,12 @@ public:
 public:
 	bool Init();
 	void Release();
-	Bitmap* LoadSprite(const wstring& filePath);
-	Bitmap* GetSprite(const wstring& filePath);
+	void LoadAllResources();
+	Bitmap* GetSprite(const wstring& spriteName);
+private:
+	void LoadResourcesFromDirectory(const wstring& directory);
+	wstring GetFileNameWithoutExtension(const wstring& filePath);
+
 private:
 	static ULONG_PTR GdiplusToken;
 	static map<wstring, Gdiplus::Bitmap*> ImageMap;

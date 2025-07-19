@@ -8,9 +8,8 @@
 #define PCH_H
 
 #include <iostream>
+#include <filesystem>
 #pragma comment(linker, "/entry:wWinMainCRTStartup /subsystem:console")
-
-using namespace std;
 
 #include "framework.h"
 #include <string>
@@ -28,6 +27,7 @@ using namespace std;
 #include <gdiplus.h>
 #pragma comment(lib, "Gdiplus.lib")
 
+using namespace std;
 using namespace Gdiplus;
 
 #include <Extern.h>
