@@ -16,6 +16,12 @@ public:
     void LateUpdate(float DeltaTime);
     void Render(HDC hdc);
     Transform GetTransform() const { return m_Transform; }
+    void SetTransform(const Transform& transform) { m_Transform = transform; }
+    void SetPosition(const Vector2& position) { m_Transform.position = position; }
+    void SetPosition(float x, float y) { m_Transform.position = Vector2(x, y); }
+    void SetRotation(float rotation) { m_Transform.rotation = rotation; }
+    void SetScale(const Vector2& scale) { m_Transform.scale = scale; }
+    void SetScale(float x, float y) { m_Transform.scale = Vector2(x, y); }
 public:
     unique_ptr<IPrototypeable> Clone() const override; // 프로토타입 패턴 구현
     void CopyFrom(const IPrototypeable* source) override;

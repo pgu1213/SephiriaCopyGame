@@ -5,8 +5,9 @@ class PlayerMovement : public Component
 {
 public:
     PlayerMovement(Object* owner);
-    virtual ~PlayerMovement() = default;
-
+    PlayerMovement(const PlayerMovement& other); // 복사 생성자
+protected:
+    Component* CloneImpl() const override;
 public:
     void Update(float deltaTime) override;
     void SetSpeed(float speed) { m_Speed = speed; }

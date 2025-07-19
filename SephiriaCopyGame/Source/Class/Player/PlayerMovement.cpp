@@ -2,9 +2,25 @@
 #include "PlayerMovement.h"
 #include <Engine/Managers/InputManager/InputManager.h>
 #include <Engine/Object/Object/Object.h>
+#include <Engine/Object/Component/SpriteRenderer/SpriteRenderer.h>
 
-PlayerMovement::PlayerMovement(Object* owner) : Component(owner)
+PlayerMovement::PlayerMovement(Object* owner)
+    : Component(owner)
+	, m_Speed(200.0f)  // 픽셀/초
+	, m_Velocity({ 0.0f, 0.0f })
 {
+}
+
+PlayerMovement::PlayerMovement(const PlayerMovement& other)
+    : Component(other.m_pOwner)
+    , m_Speed(other.m_Speed)
+    , m_Velocity(other.m_Velocity)
+{
+}
+
+Component* PlayerMovement::CloneImpl() const
+{
+    return new PlayerMovement(*this);
 }
 
 void PlayerMovement::Update(float deltaTime)
@@ -25,7 +41,16 @@ void PlayerMovement::Update(float deltaTime)
     if (input->IsKeyPressed('S') || input->IsKeyPressed(VK_DOWN))
         inputDir.y += 1.0f;
 
-    // 벡터 정규화 (대각선 이동 시 속도 일정하게)
+    if (inputDir.x != 0.0f)
+    {
+        SpriteRenderer* spriteRenderer = m_pOwner->GetComponent<SpriteRenderer>();
+        if (spriteRenderer)
+        {
+            spriteRenderer->SetFlipX(inputDir.x < 0.0f);
+        }
+    }
+
+    // 벡터 정규화
     float length = sqrt(inputDir.x * inputDir.x + inputDir.y * inputDir.y);
     if (length > 0.0f)
     {
@@ -38,7 +63,10 @@ void PlayerMovement::Update(float deltaTime)
     m_Velocity.y = inputDir.y * m_Speed;
 
     // 위치 업데이트
-    /*Transform& transform = m_pOwner->GetTransform();
-    transform.position.x += m_Velocity.x * deltaTime;
-    transform.position.y += m_Velocity.y * deltaTime;*/
+    const Transform& currentTransform = m_pOwner->GetTransform();
+    Vector2 newPosition = currentTransform.position;
+    newPosition.x += m_Velocity.x * deltaTime;
+    newPosition.y += m_Velocity.y * deltaTime;
+    m_pOwner->SetPosition(newPosition);
+	printf("Player Position: (%f, %f)\n", newPosition.x, newPosition.y);
 }

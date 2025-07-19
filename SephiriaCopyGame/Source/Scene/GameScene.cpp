@@ -2,6 +2,9 @@
 #include "GameScene.h"
 #include <Engine/Object/Object/Object.h>
 #include <Engine/Object/Component/SpriteRenderer/SpriteRenderer.h>
+#include <Engine/Object/Component/Animation/Animation.h>
+#include <Engine/Object/Component/Camera/Camera.h>
+#include <Source/Class/Player/PlayerMovement.h>
 
 GameScene::GameScene()
 {
@@ -18,7 +21,12 @@ void GameScene::Init()
 
     // 예시: 플레이어 오브젝트 생성
     Object* player = CreateGameObject("Player");
-	printf("Player Object Created\n");
 	player->AddComponent<SpriteRenderer>();
-    // 플레이어에 필요한 컴포넌트 추가 등...
+	player->GetComponent<SpriteRenderer>()->SetSprite(L"Player_Basic_Move_Lower00");
+	player->GetComponent<SpriteRenderer>()->SetPosition(960.0f, 540.0f);
+    player->AddComponent<Animation>();
+    vector<wstring> WalkFrames = { L"Player_Basic_Move_Lower00, Player_Basic_Move_Lower01, Player_Basic_Move_Lower02, Player_Basic_Move_Lower03,Player_Basic_Move_Lower04 ,Player_Basic_Move_Lower05, Player_Basic_Move_Lower06, Player_Basic_Move_Lower07" };
+    player->GetComponent<Animation>()->AddAnimationClip(L"DownMove", WalkFrames, 0.5f, true);
+	player->GetComponent<Animation>()->PlayAnimation(L"DownMove");
+    player->AddComponent<PlayerMovement>();
 }
