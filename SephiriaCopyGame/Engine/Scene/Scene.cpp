@@ -1,22 +1,6 @@
 #include <pch.h>
 #include "Scene.h"
 
-Object* Scene::CreateGameObject(const string& name)
-{
-    auto obj = make_unique<Object>(name);
-    Object* rawPtr = obj.get();
-    m_ObjectsToAdd.push(move(obj));
-    return rawPtr;
-}
-
-void Scene::DestroyGameObject(Object* obj)
-{
-    if (obj)
-    {
-        m_ObjectsToDestroy.push_back(obj);
-    }
-}
-
 void Scene::Update(float DeltaTime)
 {
     // 대기 중인 오브젝트들 처리
@@ -44,33 +28,6 @@ void Scene::Render(HDC hdc)
     }
 }
 
-void Scene::Clear()
-{
-    // 모든 오브젝트 제거
-    m_GameObjects.clear();
-
-    // 대기 중인 오브젝트들도 제거
-    while (!m_ObjectsToAdd.empty())
-    {
-        m_ObjectsToAdd.pop();
-    }
-
-    m_ObjectsToDestroy.clear();
-}
-
-Object* Scene::FindGameObject(const string& name) const
-{
-    // 이름으로 오브젝트 찾기
-    for (const auto& obj : m_GameObjects)
-    {
-        if (obj && obj->GetName() == name)
-        {
-            return obj.get();
-        }
-    }
-	return nullptr; // 찾지 못한 경우 nullptr 반환
-}
-
 void Scene::ProcessPendingObjects()
 {
     // 동적 추가 시 대기 중인 오브젝트 처리
@@ -93,3 +50,76 @@ void Scene::ProcessPendingObjects()
     }
     m_ObjectsToDestroy.clear();
 }
+
+void Scene::Clear()
+{
+    // 모든 오브젝트 제거
+    m_GameObjects.clear();
+
+    // 대기 중인 오브젝트들도 제거
+    while (!m_ObjectsToAdd.empty())
+    {
+        m_ObjectsToAdd.pop();
+    }
+
+    m_ObjectsToDestroy.clear();
+}
+
+Object* Scene::CreateGameObject(const string& name)
+{
+    auto obj = make_unique<Object>(name);
+    Object* rawPtr = obj.get();
+    m_ObjectsToAdd.push(move(obj));
+    return rawPtr;
+}
+
+void Scene::DestroyGameObject(Object* obj)
+{
+    if (obj)
+    {
+        m_ObjectsToDestroy.push_back(obj);
+    }
+}
+
+Object* Scene::FindGameObject(const string& name) const
+{
+    // 이름으로 오브젝트 찾기
+    for (const auto& obj : m_GameObjects)
+    {
+        if (obj && obj->GetName() == name)
+        {
+            return obj.get();
+        }
+    }
+	return nullptr; // 찾지 못한 경우 nullptr 반환
+}
+
+UI* Scene::CreateUI(const string& name)
+{
+    auto obj = make_unique<UI>(name);
+    UI* rawPtr = obj.get();
+    m_UIToAdd.push(move(obj));
+    return rawPtr;
+}
+
+void Scene::DestroyUI(UI* obj)
+{
+    if (obj)
+    {
+        m_UIToDestroy.push_back(obj);
+    }
+}
+
+UI* Scene::FindUI(const string& name) const
+{
+    // 이름으로 오브젝트 찾기
+    for (const auto& obj : m_UI)
+    {
+        if (obj && obj->GetName() == name)
+        {
+            return obj.get();
+        }
+    }
+    return nullptr; // 찾지 못한 경우 nullptr 반환
+}
+

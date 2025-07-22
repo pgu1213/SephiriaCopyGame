@@ -11,6 +11,30 @@ enum class CollisionLayer : uint32_t
     All = 0xFFFFFFFF
 };
 
+// UI 앵커 타입
+enum class UIAnchor
+{
+    TopLeft,
+    TopCenter,
+    TopRight,
+    CenterLeft,
+    Center,
+    CenterRight,
+    BottomLeft,
+    BottomCenter,
+    BottomRight
+};
+
+// UI 이벤트 타입
+enum class UIEventType
+{
+    None,
+    Click,
+    Hover,
+    Press,
+    Release
+};
+
 // 버튼 상태
 enum class ButtonState
 {

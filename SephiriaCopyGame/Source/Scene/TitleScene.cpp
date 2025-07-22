@@ -51,7 +51,7 @@ void TitleScene::Init()
     Camera* camera = cameraObject->AddComponent<Camera>();
 
     // 카메라 초기 설정
-    camera->SetPosition(400.0f, 300.0f);  // 화면 중앙
+    camera->SetPosition(960.0f, 540.0f);  // 화면 중앙
     camera->SetZoom(1.0f);
     camera->SetViewportSize(800.0f, 600.0f);
 

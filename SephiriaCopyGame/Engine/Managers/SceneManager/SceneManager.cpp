@@ -19,7 +19,7 @@ void SceneManager::Init()
 	RegisterScene("GameScene", make_unique<GameScene>());
 
 	// ±âº» ¾À ¼³Á¤
-	SceneLoad("GameScene");
+	SceneLoad("TitleScene");
 
 	printf("SceneManager Init Complete\n");
 }
