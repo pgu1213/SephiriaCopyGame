@@ -15,11 +15,10 @@ SceneManager::~SceneManager()
 void SceneManager::Init()
 {
 	// 모든 씬들을 로드하고 등록
-	// GameScene 등록 (필요에 따라 추가 씬들을 여기에 등록)
 	RegisterScene("TitleScene", make_unique<TitleScene>());
 	RegisterScene("GameScene", make_unique<GameScene>());
 
-	// 기본 씬을 GameScene으로 설정
+	// 기본 씬 설정
 	SceneLoad("GameScene");
 
 	printf("SceneManager Init Complete\n");

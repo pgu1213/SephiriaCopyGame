@@ -26,7 +26,7 @@ public:
     ~TileMapEditor();
 
 public:
-    void Initialize();
+    void Init();
     void Update();
     void Render(HDC hdc);
     void HandleInput();
@@ -59,12 +59,10 @@ private:
     wstring GetFileNameFromTileID(int tileID);
 
 private:
-    // 맵 데이터 - 레이어별로 분리
     vector<vector<TileInfo>> m_GroundLayer;        // 레이어 1: Ground (타일 ID 저장)
     vector<vector<TileInfo>> m_UpperGroundLayer;   // 레이어 2: UpperGround (타일 ID 저장)  
     vector<vector<ColliderTile>> m_ColliderLayer;  // 레이어 3: Collider (0/1 저장)
 
-    // 에디터 상태
     LayerType m_CurrentLayer;
     int m_SelectedTileID;
     wstring m_SelectedTileFileName;

@@ -20,7 +20,7 @@ TilePalette::~TilePalette()
 {
 }
 
-void TilePalette::Initialize()
+void TilePalette::Init()
 {
     LoadTileItems();
     UpdateLayout();

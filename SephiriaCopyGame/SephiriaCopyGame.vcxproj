@@ -134,6 +134,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Class\Monster\Dynamite_Mole\DynamiteMoleAI.h" />
+    <ClInclude Include="Source\Class\Monster\Duelist_Mole\DuelistMoleAI.h" />
     <ClInclude Include="Engine\Object\Component\Camera\Camera.h" />
     <ClInclude Include="Engine\Object\Component\AniMation\Animation.h" />
     <ClInclude Include="Engine\Object\Component\Collider\CircleCollider.h" />
@@ -147,6 +149,8 @@
     <ClInclude Include="Engine\Managers\InputManager\InputManager.h" />
     <ClInclude Include="Engine\Object\IPrototypeable\IPrototypeable.h" />
     <ClInclude Include="Engine\Object\Object\Object.h" />
+    <ClInclude Include="Source\Class\Monster\MoleGuard\MoleGuardAI.h" />
+    <ClInclude Include="Source\Class\Player\PlayerWeapon.h" />
     <ClInclude Include="Source\Class\Player\PlayerMovement.h" />
     <ClInclude Include="Source\Scene\GameScene.h" />
     <ClInclude Include="pch.h" />
@@ -167,6 +171,8 @@
     <ClInclude Include="Engine\Managers\UIManager\UIManager.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Class\Monster\Dynamite_Mole\DynamiteMoleAI.cpp" />
+    <ClCompile Include="Source\Class\Monster\Duelist_Mole\DuelistMoleAI.cpp" />
     <ClCompile Include="Engine\Object\Component\Camera\Camera.cpp" />
     <ClCompile Include="Engine\Object\Component\AniMation\Animation.cpp" />
     <ClCompile Include="Engine\Object\Component\Collider\CircleCollider.cpp" />
@@ -179,6 +185,8 @@
     <ClCompile Include="Engine\Managers\InputManager\InputManager.cpp" />
     <ClCompile Include="Engine\Object\IPrototypeable\IPrototypeable.cpp" />
     <ClCompile Include="Engine\Object\Object\Object.cpp" />
+    <ClCompile Include="Source\Class\Monster\MoleGuard\MoleGuardAI.cpp" />
+    <ClCompile Include="Source\Class\Player\PlayerWeapon.cpp" />
     <ClCompile Include="Source\Class\Player\PlayerMovement.cpp" />
     <ClCompile Include="Source\Scene\GameScene.cpp" />
     <ClCompile Include="pch.cpp">

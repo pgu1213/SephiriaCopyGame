@@ -1,5 +1,6 @@
 #pragma once
 
+// 프로토타입 인터페이스
 class IPrototypeable
 {
 public:

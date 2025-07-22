@@ -10,10 +10,18 @@ protected:
     Component* CloneImpl() const override;
 public:
     void Update(float deltaTime) override;
-    void SetSpeed(float speed) { m_Speed = speed; }
-    float GetSpeed() const { return m_Speed; }
 
 private:
-    float m_Speed = 200.0f;  // 픽셀/초
-    Vector2 m_Velocity = { 0.0f, 0.0f };
+    float m_Speed;             // 이동 속도
+    Vector2 m_Velocity;      // 현재 속도
+
+    // 대쉬 관련 변수들
+    float m_DashSpeed;       // 대쉬 속도
+    float m_DashDuration;    // 대쉬 지속 시간
+    float m_DashCooldown;    // 대쉬 쿨다운 시간
+
+    float m_DashTimer;       // 현재 대쉬 시간
+    float m_DashCooldownTimer; // 현재 쿨다운 시간
+    bool m_IsDashing;        // 대쉬 중인지 확인
+    Vector2 m_DashDirection; // 대쉬 방향
 };

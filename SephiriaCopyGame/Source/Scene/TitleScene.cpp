@@ -83,13 +83,12 @@ void TitleScene::SetupUI()
     startButton->SetText(L"게임 시작");
     startButton->SetPosition(-100.0f, 50.0f); // 중앙에서 왼쪽으로 100, 위로 25
     startButton->SetSize(500.0f, 500.0f);
-    startButton->SetAnchor(UIAnchor::Center); // 화면 중앙 기준
-    startButton->SetFont(L"맑은 고딕", 18, true);
+    startButton->SetAnchor(UIAnchor::Center);
 
     // 버튼 색상 설정
     startButton->SetBackgroundColor(ButtonState::Normal, RGB(255, 0, 0));
-    startButton->SetBackgroundColor(ButtonState::Hovered, RGB(100, 150, 200));
-    startButton->SetBackgroundColor(ButtonState::Pressed, RGB(50, 100, 150));
+    startButton->SetBackgroundColor(ButtonState::Hovered, RGB(0, 255, 0));
+    startButton->SetBackgroundColor(ButtonState::Pressed, RGB(0, 0, 255));
     startButton->SetTextColor(RGB(255, 255, 255));
 
     // 클릭 이벤트 설정
@@ -108,11 +107,10 @@ void TitleScene::SetupUI()
     exitButton->SetPosition(100.0f, 35.0f); // 시작 버튼 아래
     exitButton->SetSize(200.0f, 50.0f);
     exitButton->SetAnchor(UIAnchor::Center);
-    exitButton->SetFont(L"맑은 고딕", 32, true);
 
-    exitButton->SetBackgroundColor(ButtonState::Normal, RGB(180, 70, 70));
-    exitButton->SetBackgroundColor(ButtonState::Hovered, RGB(200, 100, 100));
-    exitButton->SetBackgroundColor(ButtonState::Pressed, RGB(150, 50, 50));
+    exitButton->SetBackgroundColor(ButtonState::Normal, RGB(255, 0, 0));
+    exitButton->SetBackgroundColor(ButtonState::Hovered, RGB(0, 255, 0));
+    exitButton->SetBackgroundColor(ButtonState::Pressed, RGB(0, 0, 255));
     exitButton->SetTextColor(RGB(255, 255, 255));
 
     exitButton->SetClickCallback([]() {

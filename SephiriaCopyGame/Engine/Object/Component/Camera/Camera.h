@@ -17,16 +17,16 @@ public:
     void Render(HDC hdc) override;
 
 public:
-    // 카메라 위치 설정/획득
+    // 카메라 위치 설정
     void SetPosition(float x, float y);
     void SetPosition(const Vector2& position);
     Vector2 GetPosition() const;
 
-    // 카메라 회전 설정/획득
+    // 카메라 회전 설정
     void SetRotation(float rotation);
     float GetRotation() const;
 
-    // 카메라 줌 설정/획득
+    // 카메라 줌 설정
     void SetZoom(float zoom);
     float GetZoom() const;
 

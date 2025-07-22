@@ -10,8 +10,5 @@ unique_ptr<Object> PrototypeFactory::CreateFromPrototype(const string& prototype
 
 void PrototypeFactory::CreateDefaultPrototypes()
 {
-    auto player = make_unique<Object>("Player");
-    player->AddComponent<SpriteRenderer>();
 
-    PrototypeManager::GetInstance()->RegisterPrototype("Player", move(player));
 }

@@ -58,6 +58,19 @@ void Scene::Clear()
     m_ObjectsToDestroy.clear();
 }
 
+Object* Scene::FindGameObject(const string& name) const
+{
+    // 이름으로 오브젝트 찾기
+    for (const auto& obj : m_GameObjects)
+    {
+        if (obj && obj->GetName() == name)
+        {
+            return obj.get();
+        }
+    }
+	return nullptr; // 찾지 못한 경우 nullptr 반환
+}
+
 void Scene::ProcessPendingObjects()
 {
     // 동적 추가 시 대기 중인 오브젝트 처리

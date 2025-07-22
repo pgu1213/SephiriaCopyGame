@@ -17,6 +17,9 @@ public:
     void Render(HDC hdc);
     void Clear(); // 모든 오브젝트 정리
 
+
+	Object* FindGameObject(const string& name) const; // 이름으로 오브젝트 찾기
+
 private:
     void ProcessPendingObjects(); // 추가/삭제 대기 중인 오브젝트들 처리
 

@@ -24,13 +24,6 @@ void UIManager::Init()
 
 void UIManager::Update(float deltaTime)
 {
-    // Z-Order 정렬이 필요한 경우 정렬
-    if (m_NeedSort)
-    {
-        SortUIsByZOrder();
-        m_NeedSort = false;
-    }
-
     // 모든 UI 업데이트
     for (auto& ui : m_UIList)
     {
@@ -215,15 +208,6 @@ void UIManager::SendToBack(shared_ptr<UI> ui)
     // 해당 UI의 Z-Order를 최저값 - 1로 설정
     ui->SetZOrder(minZOrder - 1);
     m_NeedSort = true;
-}
-
-void UIManager::SortUIsByZOrder()
-{
-    sort(m_UIList.begin(), m_UIList.end(),
-        [](const shared_ptr<UI>& a, const shared_ptr<UI>& b) {
-            if (!a || !b) return false;
-            return a->GetZOrder() < b->GetZOrder();
-        });
 }
 
 shared_ptr<UI> UIManager::FindUIUnderMouse(int x, int y)

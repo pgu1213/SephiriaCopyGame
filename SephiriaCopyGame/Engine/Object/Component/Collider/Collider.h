@@ -3,18 +3,7 @@
 
 class Collider;
 
-using CollisionCallback = std::function<void(Collider*)>;
-
-enum class CollisionLayer : uint32_t
-{
-    None = 0,
-    Player = 1 << 0,        // 1
-    Enemy = 1 << 1,         // 2
-    Wall = 1 << 2,          // 4
-    Item = 1 << 3,          // 8
-    Trigger = 1 << 4,       // 16
-    All = 0xFFFFFFFF
-};
+using CollisionCallback = function<void(Collider*)>;
 
 class Collider : public Component
 {
@@ -28,11 +17,11 @@ public:
     virtual Rect GetBounds() = 0;
     virtual Vector2 GetCenter() = 0;
 
-    // 충돌 검사 (자동으로 모든 콜라이더와 체크)
+    // 충돌 검사 모든 콜라이더와 체크
 	virtual void Update(float DeltaTime) override;
 	virtual void Render(HDC hdc) override;
 
-    // 이벤트 콜백 설정
+    // 콜백 함수
     void SetOnCollisionEnter(const CollisionCallback& callback) { m_OnCollisionEnter = callback; }
     void SetOnCollisionStay(const CollisionCallback& callback) { m_OnCollisionStay = callback; }
     void SetOnCollisionExit(const CollisionCallback& callback) { m_OnCollisionExit = callback; }
@@ -41,13 +30,12 @@ public:
     void SetOnTriggerStay(const CollisionCallback& callback) { m_OnTriggerStay = callback; }
     void SetOnTriggerExit(const CollisionCallback& callback) { m_OnTriggerExit = callback; }
 
-    // 속성 설정
+    // 속성
     void SetIsTrigger(bool trigger) { m_IsTrigger = trigger; }
     void SetLayer(CollisionLayer layer) { m_Layer = layer; }
     void SetLayerMask(CollisionLayer mask) { m_LayerMask = mask; }
     void SetEnabled(bool enabled) { m_Enabled = enabled; }
 
-    // 속성 조회
     bool IsTrigger() const { return m_IsTrigger; }
     CollisionLayer GetLayer() const { return m_Layer; }
     bool IsEnabled() const { return m_Enabled; }

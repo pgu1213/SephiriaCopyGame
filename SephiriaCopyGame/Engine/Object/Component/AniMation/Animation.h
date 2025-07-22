@@ -5,31 +5,30 @@ class SpriteRenderer;
 
 struct AnimationFrame
 {
-    std::wstring spriteName;  // 스프라이트 이름
+    wstring spriteName;  // 스프라이트 이름
     RECT sourceRect;          // 스프라이트 시트에서의 영역 (선택사항)
     float duration;           // 이 프레임의 지속 시간
 
-    AnimationFrame(const std::wstring& name, float dur)
+    AnimationFrame(const wstring& name, float dur)
         : spriteName(name), duration(dur)
     {
         sourceRect = { 0, 0, 0, 0 }; // 전체 이미지 사용
     }
 
-    AnimationFrame(const std::wstring& name, const RECT& rect, float dur)
+    AnimationFrame(const wstring& name, const RECT& rect, float dur)
         : spriteName(name), sourceRect(rect), duration(dur) {
     }
 };
 
 struct AnimationClip
 {
-    std::string name;
-    std::vector<AnimationFrame> frames;
+    string name;
+    vector<AnimationFrame> frames;
     bool loop;
 
-    // 기본 생성자 추가 (std::map에서 필요)
     AnimationClip() : name(""), loop(true) {}
 
-    AnimationClip(const std::string& clipName, bool isLoop = true)
+    AnimationClip(const string& clipName, bool isLoop = true)
         : name(clipName), loop(isLoop) {
     }
 };
@@ -49,7 +48,7 @@ public:
 public:
     // 애니메이션 재생 제어
     void AddClip(const AnimationClip& clip);
-    void PlayClip(const std::string& clipName);
+    void PlayClip(const string& clipName);
     void Stop();
     void Pause();
     void Resume();
@@ -57,7 +56,7 @@ public:
     // 애니메이션 상태
     bool IsPlaying() const { return m_IsPlaying; }
     bool IsPaused() const { return m_IsPaused; }
-    std::string GetCurrentClipName() const { return m_CurrentClipName; }
+    string GetCurrentClipName() const { return m_CurrentClipName; }
 
     // 애니메이션 속도 조절
     void SetSpeed(float speed) { m_Speed = speed; }
@@ -68,10 +67,10 @@ private:
     SpriteRenderer* GetSpriteRenderer();
 
 private:
-    std::map<std::string, AnimationClip> m_Clips;
+    map<string, AnimationClip> m_Clips;
     SpriteRenderer* m_pSpriteRenderer;
 
-    std::string m_CurrentClipName;
+    string m_CurrentClipName;
     int m_CurrentFrameIndex;
     float m_CurrentFrameTime;
     float m_Speed;

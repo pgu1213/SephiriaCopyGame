@@ -26,7 +26,7 @@ public:
     void HandleMouseDown(int x, int y);
     void HandleMouseUp(int x, int y);
 
-    // 화면 크기 설정 (UI 앵커 계산용)
+    // 화면 크기 설정
     void SetScreenSize(float width, float height);
 
     // 포커스 관리
@@ -42,8 +42,6 @@ public:
     void SendToBack(shared_ptr<UI> ui);
 
 private:
-    // UI 정렬 (Z-Order 기준)
-    void SortUIsByZOrder();
 
     // 마우스 이벤트를 처리할 UI 찾기 (최상위부터)
     shared_ptr<UI> FindUIUnderMouse(int x, int y);

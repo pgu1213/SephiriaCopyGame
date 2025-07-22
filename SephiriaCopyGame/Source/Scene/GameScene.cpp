@@ -1,10 +1,12 @@
 #include <pch.h>
 #include "GameScene.h"
+#include <Engine/Managers/UIManager/UIManager.h>
 #include <Engine/Object/Object/Object.h>
 #include <Engine/Object/Component/SpriteRenderer/SpriteRenderer.h>
 #include <Engine/Object/Component/Animation/Animation.h>
 #include <Engine/Object/Component/Camera/Camera.h>
 #include <Source/Class/Player/PlayerMovement.h>
+#include <Source/Class/Player/PlayerWeapon.h>
 
 GameScene::GameScene()
 {
@@ -25,8 +27,30 @@ void GameScene::Init()
 	player->GetComponent<SpriteRenderer>()->SetPosition(960.0f, 540.0f);
 	player->GetComponent<SpriteRenderer>()->SetSize(64.0f, 64.0f); // 플레이어 크기 설정
 	SetupPlayerAnimation(player);
-
     player->AddComponent<PlayerMovement>();
+
+    Object* playerweapon = CreateGameObject("PlayerWeapon");
+    playerweapon->AddComponent<SpriteRenderer>();
+    playerweapon->GetComponent<SpriteRenderer>()->SetSprite(L"Weapon_Sword0");
+    playerweapon->GetComponent<SpriteRenderer>()->SetPosition(960.0f, 540.0f);
+    playerweapon->GetComponent<SpriteRenderer>()->SetSize(32.0f, 32.0f); // 플레이어 크기 설정
+    SetupPlayerAnimation(player);
+    playerweapon->AddComponent<PlayerWeapon>();
+
+    // 카메라 설정
+    Object* camera = CreateGameObject("MainCamera");
+    camera->AddComponent<Camera>();
+
+	camera->GetComponent<Camera>()->SetPosition(400.0f, 300.0f);
+	camera->GetComponent<Camera>()->SetZoom(1.0f);
+	camera->GetComponent<Camera>()->SetViewportSize(800.0f, 600.0f);
+	camera->GetComponent<Camera>()->SetBounds(0.0f, 0.0f, 1600.0f, 1200.0f);
+	
+	//camera->GetComponent<Camera>()->SetMainCamera(this);
+    camera->GetComponent<Camera>()->SetTarget(player);
+
+	camera->GetComponent<Camera>()->SetFollowSpeed(5.0f);
+	camera->GetComponent<Camera>()->SetFollowOffset(Vector2(0.0f, -50.0f));
 }
 
 void GameScene::SetupPlayerAnimation(Object* player)

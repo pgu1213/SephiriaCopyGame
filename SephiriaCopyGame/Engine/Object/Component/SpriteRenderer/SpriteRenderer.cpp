@@ -291,7 +291,7 @@ RECT SpriteRenderer::CalculateCurrentFrameRect() const
     return { frameX, frameY, frameX + frameWidth, frameY + frameHeight };
 }
 
-void SpriteRenderer::SetSpriteByName(const std::wstring& spriteName)
+void SpriteRenderer::SetSpriteByName(const wstring& spriteName)
 {
     m_pSprite = ResourceManager::GetInstance()->GetSprite(spriteName);
 }

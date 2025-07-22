@@ -32,19 +32,19 @@ void MainEditor::Initialize()
     // HDC 얻기
     m_hDC = GetDC(g_hWnd);
 
-    // 매니저들 초기화
+    // 매니저 초기화
     ResourceManager::GetInstance()->Init();
     InputManager::GetInstance();
     FileManager::GetInstance();
 
     // 에디터 컴포넌트들 생성 및 초기화
     m_pTileMapEditor = new TileMapEditor();
-    m_pTileMapEditor->Initialize();
+    m_pTileMapEditor->Init();
 
     m_pTilePalette = new TilePalette();
-    m_pTilePalette->Initialize();
-    m_pTilePalette->SetPosition(10, 10);
-    m_pTilePalette->SetSize(200, 400);
+    m_pTilePalette->Init();
+    m_pTilePalette->SetPosition(100, 100);
+    m_pTilePalette->SetSize(500, 600);
 
     m_pPropPalette = new PropPalette();
     m_pPropPalette->Init();
@@ -56,7 +56,7 @@ void MainEditor::Initialize()
     // 초기 뷰포트 설정
     RECT clientRect;
     GetClientRect(g_hWnd, &clientRect);
-    int viewportWidth = clientRect.right - 440; // 팔레트 공간 제외
+    int viewportWidth = clientRect.right - 440;
     int viewportHeight = clientRect.bottom;
     m_pTileMapEditor->SetViewport(0, 0, viewportWidth, viewportHeight);
 
@@ -107,10 +107,9 @@ void MainEditor::Render()
     FillRect(m_hDC, &clientRect, bgBrush);
     DeleteObject(bgBrush);
 
-    // 타일맵 에디터 렌더링 (메인 영역)
+    // 타일맵 에디터 렌더
     m_pTileMapEditor->Render(m_hDC);
 
-    // UI 렌더링
     if (!m_PropMode)
     {
         m_pTilePalette->Render(m_hDC);

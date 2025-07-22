@@ -28,7 +28,7 @@ TileMapEditor::~TileMapEditor()
 {
 }
 
-void TileMapEditor::Initialize()
+void TileMapEditor::Init()
 {
     // 맵 크기 초기화
     SetGridSize(m_MapWidth, m_MapHeight);

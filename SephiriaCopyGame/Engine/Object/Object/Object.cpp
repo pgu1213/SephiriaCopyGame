@@ -16,7 +16,6 @@ void Object::Update(float DeltaTime)
 {
     if (!m_bisActive) return;
 
-    // Start 호출 (한 번만)
     if (!m_bisStarted)
     {
         for (auto& component : m_Components)
@@ -27,7 +26,6 @@ void Object::Update(float DeltaTime)
         m_bisStarted = true;
     }
 
-    // Update 호출
     for (auto& component : m_Components)
     {
         if (component->IsEnabled())

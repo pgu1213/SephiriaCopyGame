@@ -16,12 +16,11 @@ public:
     void Render(HDC hdc) override;
     void OnDestroy() override;
 public:
-    // Sprite management
+    // 모든 변수에 대해 수정할 수 있게 제공해야할듯?
     void SetSprite(const wstring& spriteName);
     void SetSprite(Gdiplus::Bitmap* bitmap);
     Gdiplus::Bitmap* GetSprite() const { return m_pSprite; }
 
-    // Transform properties
     void SetPosition(const Vector2& position) { m_Position = position; }
     void SetPosition(float x, float y) { m_Position = Vector2(x, y); }
     Vector2 GetPosition() const { return m_Position; }
@@ -38,25 +37,21 @@ public:
     void SetRotation(float rotation) { m_Rotation = rotation; }
     float GetRotation() const { return m_Rotation; }
 
-    // Rendering properties
     void SetOpacity(float opacity) { m_Opacity = max(0.0f, min(1.0f, opacity)); }
     float GetOpacity() const { return m_Opacity; }
 
     void SetVisible(bool visible) { m_IsVisible = visible; }
     bool IsVisible() const { return m_IsVisible; }
 
-    // Flip properties
     void SetFlipX(bool flipX) { m_FlipX = flipX; }
     void SetFlipY(bool flipY) { m_FlipY = flipY; }
     bool GetFlipX() const { return m_FlipX; }
     bool GetFlipY() const { return m_FlipY; }
 
-    // Anchor/Pivot
     void SetAnchor(const Vector2& anchor) { m_Anchor = anchor; }
     void SetAnchor(float x, float y) { m_Anchor = Vector2(x, y); }
     Vector2 GetAnchor() const { return m_Anchor; }
 
-    // Sprite sheet support
     void SetSourceRect(const RECT& sourceRect) { m_SourceRect = sourceRect; m_UseSourceRect = true; }
     void SetSourceRect(int x, int y, int width, int height) {
         m_SourceRect = { x, y, x + width, y + height };
@@ -66,7 +61,6 @@ public:
     RECT GetSourceRect() const { return m_SourceRect; }
     bool IsUsingSourceRect() const { return m_UseSourceRect; }
 
-    // Layer/Depth
     void SetRenderLayer(int layer) { m_RenderLayer = layer; }
     int GetRenderLayer() const { return m_RenderLayer; }
 
@@ -77,7 +71,7 @@ public:
     void SetUseSourceRect(bool use) { m_UseSourceRect = use; }
 
     // 스프라이트 이름으로 설정 (ResourceManager 사용)
-    void SetSpriteByName(const std::wstring& spriteName);
+    void SetSpriteByName(const wstring& spriteName);
 
     // Frame-based animation
     void SetFrameCount(int frameCount) { m_FrameCount = frameCount; }

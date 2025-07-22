@@ -162,7 +162,8 @@ void Collider::RegisterCollider(Collider* collider)
 
 void Collider::UnregisterCollider(Collider* collider)
 {
-    auto it = std::find(s_AllColliders.begin(), s_AllColliders.end(), collider);
+    auto it = 
+        find(s_AllColliders.begin(), s_AllColliders.end(), collider);
     if (it != s_AllColliders.end())
     {
         s_AllColliders.erase(it);

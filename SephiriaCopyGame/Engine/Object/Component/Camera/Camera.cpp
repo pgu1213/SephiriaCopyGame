@@ -298,12 +298,11 @@ void Camera::UpdateTargetFollow(float deltaTime)
     if (m_Target == nullptr)
         return;
 
-    // 타겟의 Transform 컴포넌트에서 위치 가져오기 (Object 클래스에 GetTransform() 메서드가 있다고 가정)
     Vector2 targetPos = m_Target->GetTransform().position;
     targetPos.x += m_FollowOffset.x;
     targetPos.y += m_FollowOffset.y;
 
-    // 부드럽게 따라가기
+    // 보정
     Vector2 direction = Vector2(targetPos.x - m_Position.x, targetPos.y - m_Position.y);
     m_Position.x += direction.x * m_FollowSpeed * deltaTime;
     m_Position.y += direction.y * m_FollowSpeed * deltaTime;
@@ -322,7 +321,7 @@ void Camera::UpdateShake(float deltaTime)
         return;
     }
 
-    // 랜덤한 흔들림 효과
+    // 쉐이크
     float intensity = m_ShakeIntensity * (1.0f - m_ShakeTimer / m_ShakeDuration);
     m_ShakeOffset.x = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 2.0f * intensity;
     m_ShakeOffset.y = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 2.0f * intensity;

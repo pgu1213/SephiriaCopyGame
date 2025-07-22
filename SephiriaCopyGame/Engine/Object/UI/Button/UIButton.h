@@ -1,15 +1,6 @@
 #pragma once
 #include "../UI.h"
 
-// 버튼 상태
-enum class ButtonState
-{
-    Normal,
-    Hovered,
-    Pressed,
-    Disabled
-};
-
 class UIButton : public UI
 {
 public:
@@ -18,7 +9,6 @@ public:
     virtual ~UIButton();
 
 public:
-    // IPrototypeable 인터페이스
     unique_ptr<IPrototypeable> Clone() const override;
     void CopyFrom(const IPrototypeable* source) override;
 
@@ -35,12 +25,12 @@ public:
     void SetFontSize(int fontSize);
     void SetFontBold(bool bold);
 
-    // 텍스트 색상 설정 (상태별)
+    // 텍스트 색상 설정
     void SetTextColor(COLORREF color);
     void SetTextColor(ButtonState state, COLORREF color);
     COLORREF GetTextColor(ButtonState state) const;
 
-    // 배경 색상 설정 (상태별)
+    // 배경 색상 설정
     void SetBackgroundColor(ButtonState state, COLORREF color);
     COLORREF GetBackgroundColor(ButtonState state) const;
 

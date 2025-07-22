@@ -16,6 +16,7 @@ public:
     void LateUpdate(float DeltaTime);
     void Render(HDC hdc);
     Transform GetTransform() const { return m_Transform; }
+    string GetName() const { return m_Name; }
     void SetTransform(const Transform& transform) { m_Transform = transform; }
     void SetPosition(const Vector2& position) { m_Transform.position = position; }
     void SetPosition(float x, float y) { m_Transform.position = Vector2(x, y); }

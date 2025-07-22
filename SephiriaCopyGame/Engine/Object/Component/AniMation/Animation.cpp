@@ -104,12 +104,12 @@ void Animation::AddClip(const AnimationClip& clip)
     m_Clips[clip.name] = clip;
 }
 
-void Animation::PlayClip(const std::string& clipName)
+void Animation::PlayClip(const string& clipName)
 {
     auto it = m_Clips.find(clipName);
     if (it == m_Clips.end())
     {
-        std::cout << "Animation clip '" << clipName << "' not found!" << std::endl;
+        cout << "Animation clip '" << clipName << "' not found!" << endl;
         return;
     }
 
