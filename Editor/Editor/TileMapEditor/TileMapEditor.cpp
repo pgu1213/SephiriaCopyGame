@@ -2,12 +2,11 @@
 #include "TileMapEditor.h"
 #include "../Camera/Camera.h"
 #include "../TilePalette/TilePalette.h"
+#include "../../Managers/InputManager/InputManager.h"
 #include "../../Managers/ResourceManager/ResourceManager.h"
 #include "../../Managers/FileManager/FileManager.h"
 #include <fstream>
 #include <sstream>
-
-// 전역 변수를 사용하지 않고 TileMapEditor 내부에서 처리
 
 TileMapEditor::TileMapEditor()
     : m_pCamera(nullptr)
@@ -39,19 +38,18 @@ void TileMapEditor::Update()
 
 void TileMapEditor::HandleInput()
 {
-    // 마우스 위치 추적
-    POINT currentMousePos;
-    GetCursorPos(&currentMousePos);
-    ScreenToClient(GetActiveWindow(), &currentMousePos);
+    auto inputMgr = InputManager::GetInstance();
+
+    // 마우스 위치 추적 (InputManager에서 이미 클라이언트 좌표로 변환됨)
+    POINT currentMousePos = inputMgr->GetMousePosition();
 
     // 마우스 왼쪽 버튼 - 타일 배치
-    bool leftMouseDown = GetAsyncKeyState(VK_LBUTTON) & 0x8000;
-    if (leftMouseDown && !m_LeftMousePressed)
+    if (inputMgr->IsKeyDown(VK_LBUTTON))
     {
         PlaceTile();
         m_LeftMousePressed = true;
     }
-    else if (leftMouseDown && m_LeftMousePressed)
+    else if (inputMgr->IsKeyPressed(VK_LBUTTON) && m_LeftMousePressed)
     {
         // 드래그 중일 때도 타일 배치
         if (abs(currentMousePos.x - m_LastMousePos.x) > 5 ||
@@ -60,19 +58,18 @@ void TileMapEditor::HandleInput()
             PlaceTile();
         }
     }
-    else if (!leftMouseDown)
+    else if (inputMgr->IsKeyUp(VK_LBUTTON))
     {
         m_LeftMousePressed = false;
     }
 
     // 마우스 오른쪽 버튼 - 타일 제거
-    bool rightMouseDown = GetAsyncKeyState(VK_RBUTTON) & 0x8000;
-    if (rightMouseDown && !m_RightMousePressed)
+    if (inputMgr->IsKeyDown(VK_RBUTTON))
     {
         RemoveTile();
         m_RightMousePressed = true;
     }
-    else if (rightMouseDown && m_RightMousePressed)
+    else if (inputMgr->IsKeyPressed(VK_RBUTTON) && m_RightMousePressed)
     {
         // 드래그 중일 때도 타일 제거
         if (abs(currentMousePos.x - m_LastMousePos.x) > 5 ||
@@ -81,7 +78,7 @@ void TileMapEditor::HandleInput()
             RemoveTile();
         }
     }
-    else if (!rightMouseDown)
+    else if (inputMgr->IsKeyUp(VK_RBUTTON))
     {
         m_RightMousePressed = false;
     }
@@ -89,19 +86,10 @@ void TileMapEditor::HandleInput()
     m_LastMousePos = currentMousePos;
 
     // 그리드 토글
-    if (GetAsyncKeyState('G') & 0x8000)
+    if (inputMgr->IsKeyDown('G'))
     {
-        static bool gridPressed = false;
-        if (!gridPressed)
-        {
-            m_ShowGrid = !m_ShowGrid;
-            gridPressed = true;
-        }
-    }
-    else
-    {
-        static bool gridPressed = false;
-        gridPressed = false;
+        m_ShowGrid = !m_ShowGrid;
+        cout << "그리드 " << (m_ShowGrid ? "표시" : "숨김") << endl;
     }
 }
 
@@ -113,10 +101,7 @@ void TileMapEditor::PlaceTile()
     wstring selectedTile = m_pTilePalette->GetSelectedTile();
     if (selectedTile.empty()) return;
 
-    // 마우스 위치를 월드 좌표로 변환
-    POINT mousePos;
-    GetCursorPos(&mousePos);
-    ScreenToClient(GetActiveWindow(), &mousePos);
+    POINT mousePos = InputManager::GetInstance()->GetMousePosition();
 
     float worldX, worldY;
     m_pCamera->ScreenToWorld(mousePos.x, mousePos.y, worldX, worldY);
@@ -132,10 +117,7 @@ void TileMapEditor::PlaceTile()
 
 void TileMapEditor::RemoveTile()
 {
-    // 마우스 위치를 월드 좌표로 변환
-    POINT mousePos;
-    GetCursorPos(&mousePos);
-    ScreenToClient(GetActiveWindow(), &mousePos);
+    POINT mousePos = InputManager::GetInstance()->GetMousePosition();
 
     float worldX, worldY;
     m_pCamera->ScreenToWorld(mousePos.x, mousePos.y, worldX, worldY);

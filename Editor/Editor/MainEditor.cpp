@@ -35,6 +35,8 @@ void MainEditor::Initialize()
 {
     if (m_IsInitialized) return;
 
+    InputManager::GetInstance()->Update();
+
     // 리소스 매니저 초기화
     ResourceManager::GetInstance()->Init();
     ResourceManager::GetInstance()->LoadAllResources();
@@ -72,6 +74,8 @@ void MainEditor::Initialize()
 void MainEditor::Update()
 {
     if (!m_IsInitialized) return;
+
+    InputManager::GetInstance()->Update();
 
     HandleGlobalInput();
 
@@ -116,69 +120,70 @@ void MainEditor::Render()
 
 void MainEditor::HandleGlobalInput()
 {
+    auto inputMgr = InputManager::GetInstance();
+
     // 카메라 이동 (방향키)
-    float cameraSpeed = 5.0f;
-    if (GetAsyncKeyState(VK_LEFT) & 0x8000)
+    float cameraSpeed = 5.0f / m_pCamera->GetZoom(); // 줌에 따라 속도 조절
+    if (inputMgr->IsKeyPressed(VK_LEFT))
     {
         m_pCamera->SetPosition(m_pCamera->GetX() - cameraSpeed, m_pCamera->GetY());
     }
-    if (GetAsyncKeyState(VK_RIGHT) & 0x8000)
+    if (inputMgr->IsKeyPressed(VK_RIGHT))
     {
         m_pCamera->SetPosition(m_pCamera->GetX() + cameraSpeed, m_pCamera->GetY());
     }
-    if (GetAsyncKeyState(VK_UP) & 0x8000)
+    if (inputMgr->IsKeyPressed(VK_UP))
     {
         m_pCamera->SetPosition(m_pCamera->GetX(), m_pCamera->GetY() - cameraSpeed);
     }
-    if (GetAsyncKeyState(VK_DOWN) & 0x8000)
+    if (inputMgr->IsKeyPressed(VK_DOWN))
     {
         m_pCamera->SetPosition(m_pCamera->GetX(), m_pCamera->GetY() + cameraSpeed);
     }
 
-    // 기능 키들
-    if (GetAsyncKeyState('S') & 0x8000)
+    // 카메라 줌 (Page Up/Down)
+    if (inputMgr->IsKeyDown(VK_PRIOR)) // Page Up - 줌 인
     {
-        static bool savePressed = false;
-        if (!savePressed)
-        {
-            SaveCurrentMap();
-            savePressed = true;
-        }
-    }
-    else
-    {
-        static bool savePressed = false;
-        savePressed = false;
+        float currentZoom = m_pCamera->GetZoom();
+        m_pCamera->SetZoom(currentZoom * 1.2f);
     }
 
-    if (GetAsyncKeyState('L') & 0x8000)
+    if (inputMgr->IsKeyDown(VK_NEXT)) // Page Down - 줌 아웃
     {
-        static bool loadPressed = false;
-        if (!loadPressed)
-        {
-            LoadMap();
-            loadPressed = true;
-        }
-    }
-    else
-    {
-        static bool loadPressed = false;
-        loadPressed = false;
+        float currentZoom = m_pCamera->GetZoom();
+        m_pCamera->SetZoom(currentZoom / 1.2f);
     }
 
-    if (GetAsyncKeyState('T') & 0x8000)
+    // 기능 키들 (KeyDown 사용으로 중복 입력 방지)
+    if (inputMgr->IsKeyDown('S'))
     {
-        static bool togglePressed = false;
-        if (!togglePressed)
-        {
-            TogglePropMode();
-            togglePressed = true;
-        }
+        SaveCurrentMap();
     }
-    else
+
+    if (inputMgr->IsKeyDown('L'))
     {
-        static bool togglePressed = false;
-        togglePressed = false;
+        LoadMap();
+    }
+
+    if (inputMgr->IsKeyDown('T'))
+    {
+        TogglePropMode();
+    }
+
+    if (inputMgr->IsKeyDown('N'))
+    {
+        CreateNewMap();
+    }
+
+
+    if (inputMgr->IsKeyDown('Z'))
+    {
+        ChangeRoomType();
+    }
+
+    if (inputMgr->IsKeyDown('X'))
+    {
+        ChangeGridSize();
     }
 }
 
@@ -195,12 +200,18 @@ void MainEditor::RenderUI(HDC hdc)
         L", " + to_wstring((int)m_pCamera->GetY()) + L")";
     TextOut(hdc, 10, 30, cameraInfo.c_str(), cameraInfo.length());
 
+    // 줌 정보 추가
+    wstring zoomInfo = L"Zoom: " + to_wstring((int)(m_pCamera->GetZoom() * 100)) + L"%";
+    TextOut(hdc, 10, 50, zoomInfo.c_str(), zoomInfo.length());
+
     // 컨트롤 가이드
-    TextOut(hdc, 10, m_ScreenHeight - 100, L"Controls:", 9);
-    TextOut(hdc, 10, m_ScreenHeight - 80, L"Arrow Keys: Move Camera", 23);
-    TextOut(hdc, 10, m_ScreenHeight - 60, L"S: Save Map", 11);
-    TextOut(hdc, 10, m_ScreenHeight - 40, L"L: Load Map", 11);
-    TextOut(hdc, 10, m_ScreenHeight - 20, L"T: Toggle Tile/Prop Mode", 24);
+    TextOut(hdc, 10, m_ScreenHeight - 140, L"Controls:", 9);
+    TextOut(hdc, 10, m_ScreenHeight - 120, L"Arrow Keys: Move Camera", 23);
+    TextOut(hdc, 10, m_ScreenHeight - 100, L"Page Up/Down: Zoom In/Out", 25);
+    TextOut(hdc, 10, m_ScreenHeight - 80, L"S: Save Map", 11);
+    TextOut(hdc, 10, m_ScreenHeight - 60, L"L: Load Map", 11);
+    TextOut(hdc, 10, m_ScreenHeight - 40, L"T: Toggle Tile/Prop Mode", 24);
+    TextOut(hdc, 10, m_ScreenHeight - 20, L"G: Toggle Grid", 14);
 }
 
 void MainEditor::SaveCurrentMap()
@@ -252,40 +263,40 @@ void MainEditor::ChangeGridSize()
     bool inputReceived = false;
     while (!inputReceived)
     {
-        if (GetAsyncKeyState('1') & 0x8000)
+        InputManager::GetInstance()->Update(); // 매 프레임 업데이트
+        auto inputMgr = InputManager::GetInstance();
+
+        if (inputMgr->IsKeyDown('1'))
         {
             newGridSize = 16;
             inputReceived = true;
         }
-        else if (GetAsyncKeyState('2') & 0x8000)
+        else if (inputMgr->IsKeyDown('2'))
         {
             newGridSize = 32;
             inputReceived = true;
         }
-        else if (GetAsyncKeyState('3') & 0x8000)
+        else if (inputMgr->IsKeyDown('3'))
         {
             newGridSize = 48;
             inputReceived = true;
         }
-        else if (GetAsyncKeyState('4') & 0x8000)
+        else if (inputMgr->IsKeyDown('4'))
         {
             newGridSize = 64;
             inputReceived = true;
         }
-        else if (GetAsyncKeyState(VK_ESCAPE) & 0x8000)
+        else if (inputMgr->IsKeyDown(VK_ESCAPE))
         {
             cout << "그리드 크기 변경을 취소했습니다." << endl;
             return;
         }
 
-        Sleep(50); // CPU 사용률 감소
+        Sleep(16); // ~60FPS
     }
 
     m_pTileMapEditor->SetGridSize(newGridSize);
     cout << "그리드 크기를 " << newGridSize << "px로 변경했습니다." << endl;
-
-    // 키 입력 후 잠깐 대기 (중복 입력 방지)
-    Sleep(200);
 }
 
 void MainEditor::ChangeRoomType()
@@ -303,41 +314,39 @@ void MainEditor::ChangeRoomType()
 
     while (!inputReceived)
     {
-        if (GetAsyncKeyState('1') & 0x8000)
+        InputManager::GetInstance()->Update(); // 매 프레임 업데이트
+        auto inputMgr = InputManager::GetInstance();
+
+        if (inputMgr->IsKeyDown('1'))
         {
             roomType = L"Dungeon";
             inputReceived = true;
         }
-        else if (GetAsyncKeyState('2') & 0x8000)
+        else if (inputMgr->IsKeyDown('2'))
         {
             roomType = L"Cave";
             inputReceived = true;
         }
-        else if (GetAsyncKeyState('3') & 0x8000)
+        else if (inputMgr->IsKeyDown('3'))
         {
             roomType = L"Castle";
             inputReceived = true;
         }
-        else if (GetAsyncKeyState('4') & 0x8000)
+        else if (inputMgr->IsKeyDown('4'))
         {
             roomType = L"Boss";
             inputReceived = true;
         }
-        else if (GetAsyncKeyState(VK_ESCAPE) & 0x8000)
+        else if (inputMgr->IsKeyDown(VK_ESCAPE))
         {
             cout << "방 타입 변경을 취소했습니다." << endl;
             return;
         }
 
-        Sleep(50);
+        Sleep(16); // ~60FPS
     }
 
     wcout << L"방 타입을 " << roomType << L"으로 설정했습니다." << endl;
-
-    // 여기서 실제로는 맵의 메타데이터에 방 타입을 저장하거나
-    // 특정 타일셋을 자동으로 로드하는 등의 작업을 할 수 있습니다.
-
-    Sleep(200);
 }
 
 void MainEditor::TogglePropMode()

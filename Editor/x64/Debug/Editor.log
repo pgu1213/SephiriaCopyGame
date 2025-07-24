@@ -1,15 +1,11 @@
 ﻿  MainEditor.cpp
-C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(192,59): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(196,63): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(459,27): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(516,17): warning C4566: 유니버설 문자 이름 '\u26A0'(으)로 표현되는 문자는 현재 코드 페이지(949)에서 표현할 수 없습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(516,17): warning C4566: 유니버설 문자 이름 '\uFE0F'(으)로 표현되는 문자는 현재 코드 페이지(949)에서 표현할 수 없습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(530,25): warning C4566: 유니버설 문자 이름 '\u2713'(으)로 표현되는 문자는 현재 코드 페이지(949)에서 표현할 수 없습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(534,25): warning C4566: 유니버설 문자 이름 '\u26A0'(으)로 표현되는 문자는 현재 코드 페이지(949)에서 표현할 수 없습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(534,25): warning C4566: 유니버설 문자 이름 '\uFE0F'(으)로 표현되는 문자는 현재 코드 페이지(949)에서 표현할 수 없습니다.
-  ResourceManager.cpp
-  PropPalette.cpp
-C:\Dev\SephiriaCopyGame\Editor\Editor\PropPalette\PropPalette.cpp(81,89): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Dev\SephiriaCopyGame\Editor\Editor\PropPalette\PropPalette.cpp(90,54): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  코드를 생성하고 있습니다...
+C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(197,59): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(201,63): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(205,59): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(468,27): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(525,17): warning C4566: 유니버설 문자 이름 '\u26A0'(으)로 표현되는 문자는 현재 코드 페이지(949)에서 표현할 수 없습니다.
+C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(525,17): warning C4566: 유니버설 문자 이름 '\uFE0F'(으)로 표현되는 문자는 현재 코드 페이지(949)에서 표현할 수 없습니다.
+C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(539,25): warning C4566: 유니버설 문자 이름 '\u2713'(으)로 표현되는 문자는 현재 코드 페이지(949)에서 표현할 수 없습니다.
+C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(543,25): warning C4566: 유니버설 문자 이름 '\u26A0'(으)로 표현되는 문자는 현재 코드 페이지(949)에서 표현할 수 없습니다.
+C:\Dev\SephiriaCopyGame\Editor\Editor\MainEditor.cpp(543,25): warning C4566: 유니버설 문자 이름 '\uFE0F'(으)로 표현되는 문자는 현재 코드 페이지(949)에서 표현할 수 없습니다.
   Editor.vcxproj -> C:\Dev\SephiriaCopyGame\x64\Debug\Editor.exe

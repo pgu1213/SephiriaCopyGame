@@ -43,7 +43,7 @@ void Camera::Update()
 
 void Camera::SetZoom(float zoom)
 {
-    m_Zoom = max(0.1f, min(5.0f, zoom)); // 줌 범위 제한
+    m_Zoom = max(0.2f, min(5.0f, zoom)); // 줌 범위를 0.2배~5배로 확대
 }
 
 POINT Camera::WorldToScreen(float worldX, float worldY) const

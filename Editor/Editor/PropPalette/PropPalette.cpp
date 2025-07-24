@@ -1,5 +1,6 @@
 #include "../../pch.h"
 #include "PropPalette.h"
+#include "../../Managers/InputManager/InputManager.h"
 #include "../../Managers/ResourceManager/ResourceManager.h"
 
 PropPalette::PropPalette()
@@ -29,12 +30,11 @@ void PropPalette::Initialize()
 
 void PropPalette::Update()
 {
-    // 마우스 클릭으로 프롭 선택 (간단 구현)
-    if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)
+    auto inputMgr = InputManager::GetInstance();
+
+    if (inputMgr->IsKeyDown(VK_LBUTTON))
     {
-        POINT mousePos;
-        GetCursorPos(&mousePos);
-        ScreenToClient(GetActiveWindow(), &mousePos);
+        POINT mousePos = inputMgr->GetMousePosition();
 
         if (mousePos.x >= m_PaletteX && mousePos.x < m_PaletteX + m_PaletteWidth &&
             mousePos.y >= m_PaletteY && mousePos.y < m_PaletteY + m_PaletteHeight)
@@ -44,6 +44,7 @@ void PropPalette::Update()
             {
                 m_SelectedProp = m_PropList[propIndex];
                 m_SelectedIndex = propIndex;
+                wcout << L"선택된 프롭: " << m_SelectedProp << endl;
             }
         }
     }

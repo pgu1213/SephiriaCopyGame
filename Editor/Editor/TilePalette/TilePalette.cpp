@@ -1,5 +1,6 @@
 #include "../../pch.h"
 #include "TilePalette.h"
+#include "../../Managers/InputManager/InputManager.h"
 #include "../../Managers/ResourceManager/ResourceManager.h"
 
 TilePalette::TilePalette()
@@ -42,33 +43,50 @@ void TilePalette::Update()
 
 void TilePalette::HandleInput()
 {
-    // 팔레트 스크롤
-    if (GetAsyncKeyState(VK_PRIOR) & 0x8000) // Page Up
-    {
-        m_ScrollOffset = max(0, m_ScrollOffset - 1);
-    }
-    if (GetAsyncKeyState(VK_NEXT) & 0x8000) // Page Down
-    {
-        int maxScroll = max(0, (int)m_TileList.size() - (m_PaletteHeight / m_TileSize));
-        m_ScrollOffset = min(maxScroll, m_ScrollOffset + 1);
-    }
+    auto inputMgr = InputManager::GetInstance();
 
     // 마우스 클릭으로 타일 선택
-    if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)
+    if (inputMgr->IsKeyDown(VK_LBUTTON))
     {
-        POINT mousePos;
-        GetCursorPos(&mousePos);
-        ScreenToClient(GetActiveWindow(), &mousePos);
+        POINT mousePos = inputMgr->GetMousePosition();
 
         if (mousePos.x >= m_PaletteX && mousePos.x < m_PaletteX + m_PaletteWidth &&
             mousePos.y >= m_PaletteY && mousePos.y < m_PaletteY + m_PaletteHeight)
         {
-            int tileIndex = (mousePos.y - m_PaletteY) / m_TileSize + m_ScrollOffset;
-            if (tileIndex >= 0 && tileIndex < m_TileList.size())
+            // 타일 영역 계산
+            int tilesPerRow = (m_PaletteWidth - 10) / m_TileSize;
+            int relativeY = mousePos.y - (m_PaletteY + 35);
+            int relativeX = mousePos.x - (m_PaletteX + 5);
+
+            if (relativeY >= 0 && relativeX >= 0)
             {
-                m_SelectedTile = m_TileList[tileIndex];
-                m_SelectedIndex = tileIndex;
+                int row = relativeY / m_TileSize;
+                int col = relativeX / m_TileSize;
+                int tileIndex = m_ScrollOffset + row * tilesPerRow + col;
+
+                if (tileIndex >= 0 && tileIndex < m_TileList.size())
+                {
+                    m_SelectedTile = m_TileList[tileIndex];
+                    m_SelectedIndex = tileIndex;
+                    wcout << L"선택된 타일: " << m_SelectedTile << endl;
+                }
             }
+        }
+    }
+
+    // 키보드로 팔레트 스크롤 (Ctrl + 방향키)
+    if (inputMgr->IsKeyPressed(VK_CONTROL))
+    {
+        if (inputMgr->IsKeyDown(VK_UP))
+        {
+            m_ScrollOffset = max(0, m_ScrollOffset - 1);
+        }
+        if (inputMgr->IsKeyDown(VK_DOWN))
+        {
+            int tilesPerRow = (m_PaletteWidth - 10) / m_TileSize;
+            int maxRows = (m_PaletteHeight - 60) / m_TileSize;
+            int maxScroll = max(0, ((int)m_TileList.size() + tilesPerRow - 1) / tilesPerRow - maxRows);
+            m_ScrollOffset = min(maxScroll, m_ScrollOffset + 1);
         }
     }
 }
