@@ -123,7 +123,7 @@ void MainEditor::HandleGlobalInput()
     auto inputMgr = InputManager::GetInstance();
 
     // 카메라 이동 (방향키)
-    float cameraSpeed = 5.0f / m_pCamera->GetZoom(); // 줌에 따라 속도 조절
+    float cameraSpeed = 5.0f / m_pCamera->GetZoom();
     if (inputMgr->IsKeyPressed(VK_LEFT))
     {
         m_pCamera->SetPosition(m_pCamera->GetX() - cameraSpeed, m_pCamera->GetY());
@@ -141,20 +141,20 @@ void MainEditor::HandleGlobalInput()
         m_pCamera->SetPosition(m_pCamera->GetX(), m_pCamera->GetY() + cameraSpeed);
     }
 
-    // 카메라 줌 (Page Up/Down)
-    if (inputMgr->IsKeyDown(VK_PRIOR)) // Page Up - 줌 인
+    // 카메라 줌
+    if (inputMgr->IsKeyDown(VK_PRIOR))
     {
         float currentZoom = m_pCamera->GetZoom();
         m_pCamera->SetZoom(currentZoom * 1.2f);
     }
 
-    if (inputMgr->IsKeyDown(VK_NEXT)) // Page Down - 줌 아웃
+    if (inputMgr->IsKeyDown(VK_NEXT))
     {
         float currentZoom = m_pCamera->GetZoom();
         m_pCamera->SetZoom(currentZoom / 1.2f);
     }
 
-    // 기능 키들 (KeyDown 사용으로 중복 입력 방지)
+    // 기능 키들
     if (inputMgr->IsKeyDown('S'))
     {
         SaveCurrentMap();
@@ -175,21 +175,15 @@ void MainEditor::HandleGlobalInput()
         CreateNewMap();
     }
 
-
-    if (inputMgr->IsKeyDown('Z'))
+    // 방 크기 조절 (R키)
+    if (inputMgr->IsKeyDown('R'))
     {
-        ChangeRoomType();
-    }
-
-    if (inputMgr->IsKeyDown('X'))
-    {
-        ChangeGridSize();
+        ChangeRoomSize();
     }
 }
 
 void MainEditor::RenderUI(HDC hdc)
 {
-    // UI 정보 표시
     SetTextColor(hdc, RGB(255, 255, 255));
     SetBkMode(hdc, TRANSPARENT);
 
@@ -200,18 +194,23 @@ void MainEditor::RenderUI(HDC hdc)
         L", " + to_wstring((int)m_pCamera->GetY()) + L")";
     TextOut(hdc, 10, 30, cameraInfo.c_str(), cameraInfo.length());
 
-    // 줌 정보 추가
     wstring zoomInfo = L"Zoom: " + to_wstring((int)(m_pCamera->GetZoom() * 100)) + L"%";
     TextOut(hdc, 10, 50, zoomInfo.c_str(), zoomInfo.length());
 
+    // 방 크기 정보 추가
+    if (m_pTileMapEditor)
+    {
+        wstring gridInfo = L"Grid: 16px (Fixed)";
+        TextOut(hdc, 10, 90, gridInfo.c_str(), gridInfo.length());
+    }
+
     // 컨트롤 가이드
-    TextOut(hdc, 10, m_ScreenHeight - 140, L"Controls:", 9);
-    TextOut(hdc, 10, m_ScreenHeight - 120, L"Arrow Keys: Move Camera", 23);
-    TextOut(hdc, 10, m_ScreenHeight - 100, L"Page Up/Down: Zoom In/Out", 25);
-    TextOut(hdc, 10, m_ScreenHeight - 80, L"S: Save Map", 11);
-    TextOut(hdc, 10, m_ScreenHeight - 60, L"L: Load Map", 11);
-    TextOut(hdc, 10, m_ScreenHeight - 40, L"T: Toggle Tile/Prop Mode", 24);
-    TextOut(hdc, 10, m_ScreenHeight - 20, L"G: Toggle Grid", 14);
+    TextOut(hdc, 10, m_ScreenHeight - 160, L"Controls:", 9);
+    TextOut(hdc, 10, m_ScreenHeight - 140, L"Arrow Keys: Move Camera", 23);
+    TextOut(hdc, 10, m_ScreenHeight - 120, L"Page Up/Down: Zoom In/Out", 25);
+    TextOut(hdc, 10, m_ScreenHeight - 100, L"S: Save, L: Load, T: Toggle Mode", 32);
+    TextOut(hdc, 10, m_ScreenHeight - 80, L"G: Toggle Grid, B: Toggle Bounds", 32);
+    TextOut(hdc, 10, m_ScreenHeight - 60, L"R: Change Room Size, N: New Map", 31);
 }
 
 void MainEditor::SaveCurrentMap()
@@ -245,58 +244,6 @@ void MainEditor::CreateNewMap()
     m_pCamera->SetPosition(0, 0);
 
     cout << "새로운 맵을 생성했습니다." << endl;
-}
-
-void MainEditor::ChangeGridSize()
-{
-    if (!m_pTileMapEditor) return;
-
-    int currentGridSize = m_pTileMapEditor->GetGridSize();
-    int newGridSize = currentGridSize;
-
-    cout << "\n=== 그리드 크기 변경 ===" << endl;
-    cout << "현재 그리드 크기: " << currentGridSize << "px" << endl;
-    cout << "사용 가능한 그리드 크기: 16, 32, 48, 64" << endl;
-    cout << "새로운 그리드 크기를 선택하세요 (1~4): ";
-
-    // 키보드 입력 대기
-    bool inputReceived = false;
-    while (!inputReceived)
-    {
-        InputManager::GetInstance()->Update(); // 매 프레임 업데이트
-        auto inputMgr = InputManager::GetInstance();
-
-        if (inputMgr->IsKeyDown('1'))
-        {
-            newGridSize = 16;
-            inputReceived = true;
-        }
-        else if (inputMgr->IsKeyDown('2'))
-        {
-            newGridSize = 32;
-            inputReceived = true;
-        }
-        else if (inputMgr->IsKeyDown('3'))
-        {
-            newGridSize = 48;
-            inputReceived = true;
-        }
-        else if (inputMgr->IsKeyDown('4'))
-        {
-            newGridSize = 64;
-            inputReceived = true;
-        }
-        else if (inputMgr->IsKeyDown(VK_ESCAPE))
-        {
-            cout << "그리드 크기 변경을 취소했습니다." << endl;
-            return;
-        }
-
-        Sleep(16); // ~60FPS
-    }
-
-    m_pTileMapEditor->SetGridSize(newGridSize);
-    cout << "그리드 크기를 " << newGridSize << "px로 변경했습니다." << endl;
 }
 
 void MainEditor::ChangeRoomType()
@@ -347,6 +294,55 @@ void MainEditor::ChangeRoomType()
     }
 
     wcout << L"방 타입을 " << roomType << L"으로 설정했습니다." << endl;
+}
+
+void MainEditor::ChangeRoomSize()
+{
+    if (!m_pTileMapEditor) return;
+
+    cout << "\n=== 방 크기 변경 ===" << endl;
+    cout << "사용 가능한 방 크기:" << endl;
+    cout << "1. 소형 (30x20 그리드 = 480x320px)" << endl;
+    cout << "2. 중형 (50x30 그리드 = 800x480px)" << endl;
+    cout << "3. 대형 (70x40 그리드 = 1120x640px)" << endl;
+    cout << "4. 초대형 (100x60 그리드 = 1600x960px)" << endl;
+    cout << "방 크기를 선택하세요 (1~4): ";
+
+    bool inputReceived = false;
+
+    while (!inputReceived)
+    {
+        InputManager::GetInstance()->Update();
+        auto inputMgr = InputManager::GetInstance();
+
+        if (inputMgr->IsKeyDown('1'))
+        {
+            m_pTileMapEditor->SetRoomBounds(30, 20);
+            inputReceived = true;
+        }
+        else if (inputMgr->IsKeyDown('2'))
+        {
+            m_pTileMapEditor->SetRoomBounds(50, 30);
+            inputReceived = true;
+        }
+        else if (inputMgr->IsKeyDown('3'))
+        {
+            m_pTileMapEditor->SetRoomBounds(70, 40);
+            inputReceived = true;
+        }
+        else if (inputMgr->IsKeyDown('4'))
+        {
+            m_pTileMapEditor->SetRoomBounds(100, 60);
+            inputReceived = true;
+        }
+        else if (inputMgr->IsKeyDown(VK_ESCAPE))
+        {
+            cout << "방 크기 변경을 취소했습니다." << endl;
+            return;
+        }
+
+        Sleep(16);
+    }
 }
 
 void MainEditor::TogglePropMode()

@@ -26,10 +26,14 @@ public:
 
     void SaveMap();
     void LoadMap();
-    void SetGridSize(int size) { m_GridSize = size; }
-    int GetGridSize() const { return m_GridSize; }
 
-    // 타일 팔레트 연결
+    // 그리드 크기 관련 함수 제거/수정
+    int GetGridSize() const { return GRID_SIZE; } // 상수 반환
+
+    // 방 크기 제한 함수 추가
+    void SetRoomBounds(int width, int height);
+    bool IsWithinRoomBounds(int gridX, int gridY) const;
+
     void SetTilePalette(class TilePalette* palette) { m_pTilePalette = palette; }
 
 private:
@@ -38,21 +42,29 @@ private:
     void RemoveTile();
     void RenderGrid(HDC hdc);
     void RenderTiles(HDC hdc);
-    void RenderCulledTiles(HDC hdc); // 컬링 최적화
+    void RenderCulledTiles(HDC hdc);
+    void RenderRoomBounds(HDC hdc); // 방 경계 표시
 
-    // 파일 처리 (이름 기반)
     void SaveMapWithTileNames(const wstring& filename);
     void LoadMapWithTileNames(const wstring& filename);
     wstring GenerateMapFileName();
 
 private:
+    static const int GRID_SIZE = 16; // 고정 그리드 크기
+    static const int DEFAULT_ROOM_WIDTH = 50;  // 기본 방 너비 (50 * 16 = 800px)
+    static const int DEFAULT_ROOM_HEIGHT = 30; // 기본 방 높이 (30 * 16 = 480px)
+
     map<pair<int, int>, TileData> m_TileMap;
     class Camera* m_pCamera;
     class TilePalette* m_pTilePalette;
 
-    int m_GridSize;
     bool m_ShowGrid;
     bool m_EnableCulling;
+
+    // 방 크기 제한
+    int m_RoomWidth;  // 그리드 단위
+    int m_RoomHeight; // 그리드 단위
+    bool m_ShowRoomBounds;
 
     // 마우스 상태
     bool m_LeftMousePressed;

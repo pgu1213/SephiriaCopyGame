@@ -1,0 +1,17 @@
+# Tile Map Data
+# Format: TileName X Y
+TileCount=13
+
+CaveFloor_0 0 0
+CaveFloor_0 0 1
+CaveFloor_0 1 0
+CaveFloor_0 1 1
+CaveRoof_10 2 0
+CaveRoof_10 2 1
+CaveRoof_10 3 0
+CaveRoof_10 3 1
+CaveRoof_12 4 0
+CaveRoof_12 4 1
+CaveRoof_12 5 0
+CaveRoof_12 5 1
+CaveFloor_1 68 14

@@ -20,6 +20,7 @@ public:
     void CreateNewMap();
     void ChangeGridSize();
     void ChangeRoomType();
+    void ChangeRoomSize();
     void TogglePropMode();
     void ShowMapFileList();
     void CleanupOldFiles();
