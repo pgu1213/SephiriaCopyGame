@@ -1,13 +1,5 @@
 #pragma once
 
-struct TilePaletteItem
-{
-    int tileID;
-    wstring fileName;
-    Gdiplus::Bitmap* bitmap;
-    RECT displayRect;
-};
-
 class TilePalette
 {
 public:
@@ -15,36 +7,30 @@ public:
     ~TilePalette();
 
 public:
-    void Init();
+    void Initialize();
     void Update();
     void Render(HDC hdc);
+    void Release();
+
+    wstring GetSelectedTile() const { return m_SelectedTile; }
+    void SetSelectedTile(const wstring& tileName) { m_SelectedTile = tileName; }
+
+private:
+    void LoadTileList();
     void HandleInput();
-
-    int GetSelectedTileID() const { return m_SelectedTileID; }
-    wstring GetSelectedTileFileName() const;
-    void SetPosition(int x, int y) { m_PosX = x; m_PosY = y; }
-    void SetSize(int width, int height) { m_Width = width; m_Height = height; }
+    void RenderTileList(HDC hdc);
 
 private:
-    void LoadTileItems();
-    void UpdateLayout();
-    void RenderTileGrid(HDC hdc);
-    void RenderSelection(HDC hdc);
-    int GetTileIndexAt(int x, int y);
-
-private:
-    vector<TilePaletteItem> m_TileItems;
-    int m_SelectedTileID;
-    int m_SelectedIndex;
-
-    // UI 관련
-    int m_PosX, m_PosY;
-    int m_Width, m_Height;
-    int m_TileDisplaySize;
-    int m_TilesPerRow;
+    vector<wstring> m_TileList;
+    wstring m_SelectedTile;
     int m_ScrollOffset;
+    int m_SelectedIndex;
+    bool m_IsVisible;
 
-    // 스크롤 관련
-    int m_MaxScrollOffset;
-    bool m_NeedUpdateLayout;
+    // UI 설정
+    int m_PaletteX;
+    int m_PaletteY;
+    int m_PaletteWidth;
+    int m_PaletteHeight;
+    int m_TileSize;
 };

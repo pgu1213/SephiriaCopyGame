@@ -1,638 +1,381 @@
 #include "../../pch.h"
 #include "TileMapEditor.h"
-#include "../../Managers/InputManager/InputManager.h"
+#include "../Camera/Camera.h"
+#include "../TilePalette/TilePalette.h"
 #include "../../Managers/ResourceManager/ResourceManager.h"
 #include "../../Managers/FileManager/FileManager.h"
-#include "../Camera/Camera.h"
 #include <fstream>
 #include <sstream>
 
+// 전역 변수를 사용하지 않고 TileMapEditor 내부에서 처리
+
 TileMapEditor::TileMapEditor()
-    : m_CurrentLayer(LayerType::GROUND)
-    , m_SelectedTileID(0)
-    , m_MapWidth(50)
-    , m_MapHeight(50)
-    , m_TileSize(32)
-    , m_ViewportX(0), m_ViewportY(0)
-    , m_ViewportWidth(800), m_ViewportHeight(600)
-    , m_VisibleStartX(0), m_VisibleStartY(0)
-    , m_VisibleEndX(0), m_VisibleEndY(0)
-    , m_NeedUpdate(true)
-    , m_BatchesDirty(true)
+    : m_pCamera(nullptr)
+    , m_pTilePalette(nullptr)
+    , m_GridSize(32)
     , m_ShowGrid(true)
-    , m_ShowColliders(true)
+    , m_EnableCulling(true)
+    , m_LeftMousePressed(false)
+    , m_RightMousePressed(false)
 {
+    m_LastMousePos = { 0, 0 };
 }
 
 TileMapEditor::~TileMapEditor()
 {
+    Release();
 }
 
-void TileMapEditor::Init()
+void TileMapEditor::Initialize(Camera* camera)
 {
-    // 맵 크기 초기화
-    SetGridSize(m_MapWidth, m_MapHeight);
-
-    // 리소스 매니저에서 타일 정보 동기화
-    auto tileFileNames = ResourceManager::GetInstance()->GetTileFileNames();
-
-    // 타일 ID와 파일명 매핑 생성
-    int tileID = 1; // 0은 빈 타일로 예약
-    for (const auto& fileName : tileFileNames)
-    {
-        m_TileIDToFileName[tileID] = fileName;
-        m_FileNameToTileID[fileName] = tileID;
-        tileID++;
-    }
-
-    UpdateVisibleTiles();
+    m_pCamera = camera;
+    cout << "타일맵 에디터 초기화 완료" << endl;
 }
 
 void TileMapEditor::Update()
 {
     HandleInput();
-
-    if (m_NeedUpdate)
-    {
-        UpdateVisibleTiles();
-        m_NeedUpdate = false;
-    }
 }
 
 void TileMapEditor::HandleInput()
 {
-    POINT mousePos = InputManager::GetInstance()->GetMousePosition();
+    // 마우스 위치 추적
+    POINT currentMousePos;
+    GetCursorPos(&currentMousePos);
+    ScreenToClient(GetActiveWindow(), &currentMousePos);
 
-    // 마우스 위치를 타일 좌표로 변환
-    int tileX = (mousePos.x + m_ViewportX) / m_TileSize;
-    int tileY = (mousePos.y + m_ViewportY) / m_TileSize;
-
-    // 타일 배치/제거
-    if (InputManager::GetInstance()->IsKeyPressed(VK_LBUTTON))
+    // 마우스 왼쪽 버튼 - 타일 배치
+    bool leftMouseDown = GetAsyncKeyState(VK_LBUTTON) & 0x8000;
+    if (leftMouseDown && !m_LeftMousePressed)
     {
-        PlaceTile(tileX, tileY);
+        PlaceTile();
+        m_LeftMousePressed = true;
     }
-    else if (InputManager::GetInstance()->IsKeyPressed(VK_RBUTTON))
+    else if (leftMouseDown && m_LeftMousePressed)
     {
-        RemoveTile(tileX, tileY);
+        // 드래그 중일 때도 타일 배치
+        if (abs(currentMousePos.x - m_LastMousePos.x) > 5 ||
+            abs(currentMousePos.y - m_LastMousePos.y) > 5)
+        {
+            PlaceTile();
+        }
     }
-
-    // 레이어 전환 (1, 2, 3 키)
-    if (InputManager::GetInstance()->IsKeyDown('1'))
+    else if (!leftMouseDown)
     {
-        m_CurrentLayer = LayerType::GROUND;
-    }
-    else if (InputManager::GetInstance()->IsKeyDown('2'))
-    {
-        m_CurrentLayer = LayerType::UPPER_GROUND;
-    }
-    else if (InputManager::GetInstance()->IsKeyDown('3'))
-    {
-        m_CurrentLayer = LayerType::COLLIDER;
+        m_LeftMousePressed = false;
     }
 
-    // 그리드/콜라이더 표시 토글
-    if (InputManager::GetInstance()->IsKeyDown('G'))
+    // 마우스 오른쪽 버튼 - 타일 제거
+    bool rightMouseDown = GetAsyncKeyState(VK_RBUTTON) & 0x8000;
+    if (rightMouseDown && !m_RightMousePressed)
     {
-        m_ShowGrid = !m_ShowGrid;
+        RemoveTile();
+        m_RightMousePressed = true;
     }
-    if (InputManager::GetInstance()->IsKeyDown('C'))
+    else if (rightMouseDown && m_RightMousePressed)
     {
-        m_ShowColliders = !m_ShowColliders;
+        // 드래그 중일 때도 타일 제거
+        if (abs(currentMousePos.x - m_LastMousePos.x) > 5 ||
+            abs(currentMousePos.y - m_LastMousePos.y) > 5)
+        {
+            RemoveTile();
+        }
     }
+    else if (!rightMouseDown)
+    {
+        m_RightMousePressed = false;
+    }
+
+    m_LastMousePos = currentMousePos;
+
+    // 그리드 토글
+    if (GetAsyncKeyState('G') & 0x8000)
+    {
+        static bool gridPressed = false;
+        if (!gridPressed)
+        {
+            m_ShowGrid = !m_ShowGrid;
+            gridPressed = true;
+        }
+    }
+    else
+    {
+        static bool gridPressed = false;
+        gridPressed = false;
+    }
+}
+
+void TileMapEditor::PlaceTile()
+{
+    // 타일 팔레트에서 선택된 타일 가져오기
+    if (!m_pTilePalette) return;
+
+    wstring selectedTile = m_pTilePalette->GetSelectedTile();
+    if (selectedTile.empty()) return;
+
+    // 마우스 위치를 월드 좌표로 변환
+    POINT mousePos;
+    GetCursorPos(&mousePos);
+    ScreenToClient(GetActiveWindow(), &mousePos);
+
+    float worldX, worldY;
+    m_pCamera->ScreenToWorld(mousePos.x, mousePos.y, worldX, worldY);
+
+    // 그리드에 맞춰 정렬
+    int gridX = (int)(worldX / m_GridSize);
+    int gridY = (int)(worldY / m_GridSize);
+
+    // 타일 배치
+    pair<int, int> gridPos = make_pair(gridX, gridY);
+    m_TileMap[gridPos] = TileData(selectedTile, gridX * m_GridSize, gridY * m_GridSize);
+}
+
+void TileMapEditor::RemoveTile()
+{
+    // 마우스 위치를 월드 좌표로 변환
+    POINT mousePos;
+    GetCursorPos(&mousePos);
+    ScreenToClient(GetActiveWindow(), &mousePos);
+
+    float worldX, worldY;
+    m_pCamera->ScreenToWorld(mousePos.x, mousePos.y, worldX, worldY);
+
+    // 그리드 위치 계산
+    int gridX = (int)(worldX / m_GridSize);
+    int gridY = (int)(worldY / m_GridSize);
+
+    // 타일 제거
+    pair<int, int> gridPos = make_pair(gridX, gridY);
+    m_TileMap.erase(gridPos);
 }
 
 void TileMapEditor::Render(HDC hdc)
 {
-    // 성능 최적화: 배치 렌더링 사용
-    RenderWithBatching(hdc);
-
-    // 그리드 렌더링
     if (m_ShowGrid)
     {
         RenderGrid(hdc);
     }
 
-    // 콜라이더 레이어 렌더링 (선택시에만)
-    if (m_CurrentLayer == LayerType::COLLIDER || m_ShowColliders)
+    if (m_EnableCulling)
     {
-        RenderColliderLayer(hdc);
+        RenderCulledTiles(hdc);
     }
-}
-
-void TileMapEditor::RenderVisibleTiles(HDC hdc)
-{
-    // Ground 레이어 렌더링
-    for (int y = m_VisibleStartY; y <= m_VisibleEndY; ++y)
+    else
     {
-        for (int x = m_VisibleStartX; x <= m_VisibleEndX; ++x)
-        {
-            if (IsValidPosition(x, y))
-            {
-                const auto& groundTile = m_GroundLayer[y][x];
-                if (groundTile.tileID > 0)
-                {
-                    auto bitmap = ResourceManager::GetInstance()->GetTileBitmap(groundTile.fileName);
-                    if (bitmap)
-                    {
-                        int screenX = x * m_TileSize - m_ViewportX;
-                        int screenY = y * m_TileSize - m_ViewportY;
-                        ResourceManager::GetInstance()->DrawBitmap(hdc, bitmap, screenX, screenY, m_TileSize, m_TileSize);
-                    }
-                }
-            }
-        }
+        RenderTiles(hdc);
     }
-
-    // UpperGround 레이어 렌더링
-    for (int y = m_VisibleStartY; y <= m_VisibleEndY; ++y)
-    {
-        for (int x = m_VisibleStartX; x <= m_VisibleEndX; ++x)
-        {
-            if (IsValidPosition(x, y))
-            {
-                const auto& upperTile = m_UpperGroundLayer[y][x];
-                if (upperTile.tileID > 0)
-                {
-                    auto bitmap = ResourceManager::GetInstance()->GetTileBitmap(upperTile.fileName);
-                    if (bitmap)
-                    {
-                        int screenX = x * m_TileSize - m_ViewportX;
-                        int screenY = y * m_TileSize - m_ViewportY;
-                        ResourceManager::GetInstance()->DrawBitmap(hdc, bitmap, screenX, screenY, m_TileSize, m_TileSize);
-                    }
-                }
-            }
-        }
-    }
-}
-
-void TileMapEditor::RenderColliderLayer(HDC hdc)
-{
-    // 콜라이더는 초록색 반투명 박스로 표시
-    HBRUSH greenBrush = CreateSolidBrush(RGB(0, 255, 0));
-    HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, greenBrush);
-
-    // 반투명 효과를 위한 설정
-    SetBkMode(hdc, TRANSPARENT);
-
-    for (int y = m_VisibleStartY; y <= m_VisibleEndY; ++y)
-    {
-        for (int x = m_VisibleStartX; x <= m_VisibleEndX; ++x)
-        {
-            if (IsValidPosition(x, y) && m_ColliderLayer[y][x].hasCollider)
-            {
-                int screenX = x * m_TileSize - m_ViewportX;
-                int screenY = y * m_TileSize - m_ViewportY;
-
-                RECT rect = { screenX, screenY, screenX + m_TileSize, screenY + m_TileSize };
-
-                // 반투명 박스 그리기
-                FillRect(hdc, &rect, greenBrush);
-
-                // 테두리 그리기
-                HPEN greenPen = CreatePen(PS_SOLID, 2, RGB(0, 200, 0));
-                HPEN oldPen = (HPEN)SelectObject(hdc, greenPen);
-
-                MoveToEx(hdc, rect.left, rect.top, NULL);
-                LineTo(hdc, rect.right, rect.top);
-                LineTo(hdc, rect.right, rect.bottom);
-                LineTo(hdc, rect.left, rect.bottom);
-                LineTo(hdc, rect.left, rect.top);
-
-                SelectObject(hdc, oldPen);
-                DeleteObject(greenPen);
-            }
-        }
-    }
-
-    SelectObject(hdc, oldBrush);
-    DeleteObject(greenBrush);
 }
 
 void TileMapEditor::RenderGrid(HDC hdc)
 {
-    HPEN gridPen = CreatePen(PS_SOLID, 1, RGB(128, 128, 128));
+    HPEN gridPen = CreatePen(PS_SOLID, 1, RGB(64, 64, 64));
     HPEN oldPen = (HPEN)SelectObject(hdc, gridPen);
 
-    // 세로선
-    for (int x = m_VisibleStartX; x <= m_VisibleEndX + 1; ++x)
+    // 화면 영역 계산
+    RECT clientRect;
+    GetClientRect(GetActiveWindow(), &clientRect);
+
+    float worldLeft, worldTop, worldRight, worldBottom;
+    m_pCamera->ScreenToWorld(0, 0, worldLeft, worldTop);
+    m_pCamera->ScreenToWorld(clientRect.right, clientRect.bottom, worldRight, worldBottom);
+
+    // 그리드 라인 그리기
+    int startX = ((int)worldLeft / m_GridSize) * m_GridSize;
+    int startY = ((int)worldTop / m_GridSize) * m_GridSize;
+    int endX = ((int)worldRight / m_GridSize + 1) * m_GridSize;
+    int endY = ((int)worldBottom / m_GridSize + 1) * m_GridSize;
+
+    // 수직선
+    for (int x = startX; x <= endX; x += m_GridSize)
     {
-        int screenX = x * m_TileSize - m_ViewportX;
-        if (screenX >= 0 && screenX <= m_ViewportWidth)
-        {
-            MoveToEx(hdc, screenX, 0, NULL);
-            LineTo(hdc, screenX, m_ViewportHeight);
-        }
+        POINT start = m_pCamera->WorldToScreen((float)x, worldTop);
+        POINT end = m_pCamera->WorldToScreen((float)x, worldBottom);
+        MoveToEx(hdc, start.x, start.y, NULL);
+        LineTo(hdc, end.x, end.y);
     }
 
-    // 가로선
-    for (int y = m_VisibleStartY; y <= m_VisibleEndY + 1; ++y)
+    // 수평선
+    for (int y = startY; y <= endY; y += m_GridSize)
     {
-        int screenY = y * m_TileSize - m_ViewportY;
-        if (screenY >= 0 && screenY <= m_ViewportHeight)
-        {
-            MoveToEx(hdc, 0, screenY, NULL);
-            LineTo(hdc, m_ViewportWidth, screenY);
-        }
+        POINT start = m_pCamera->WorldToScreen(worldLeft, (float)y);
+        POINT end = m_pCamera->WorldToScreen(worldRight, (float)y);
+        MoveToEx(hdc, start.x, start.y, NULL);
+        LineTo(hdc, end.x, end.y);
     }
 
     SelectObject(hdc, oldPen);
     DeleteObject(gridPen);
 }
 
-void TileMapEditor::PlaceTile(int x, int y)
+void TileMapEditor::RenderTiles(HDC hdc)
 {
-    if (!IsValidPosition(x, y)) return;
+    Graphics graphics(hdc);
 
-    bool changed = false;
+    for (const auto& tilePair : m_TileMap)
+    {
+        const TileData& tile = tilePair.second;
+        if (tile.isEmpty) continue;
 
-    if (m_CurrentLayer == LayerType::GROUND)
-    {
-        if (m_GroundLayer[y][x].tileID != m_SelectedTileID)
-        {
-            m_GroundLayer[y][x].tileID = m_SelectedTileID;
-            m_GroundLayer[y][x].fileName = GetFileNameFromTileID(m_SelectedTileID);
-            changed = true;
-        }
-    }
-    else if (m_CurrentLayer == LayerType::UPPER_GROUND)
-    {
-        if (m_UpperGroundLayer[y][x].tileID != m_SelectedTileID)
-        {
-            m_UpperGroundLayer[y][x].tileID = m_SelectedTileID;
-            m_UpperGroundLayer[y][x].fileName = GetFileNameFromTileID(m_SelectedTileID);
-            changed = true;
-        }
-    }
-    else if (m_CurrentLayer == LayerType::COLLIDER)
-    {
-        if (!m_ColliderLayer[y][x].hasCollider)
-        {
-            m_ColliderLayer[y][x].hasCollider = true;
-            changed = true;
-        }
-    }
+        Bitmap* tileSprite = ResourceManager::GetInstance()->GetSprite(tile.tileName);
+        if (!tileSprite) continue;
 
-    // 변경된 경우에만 더티 영역 추가
-    if (changed)
-    {
-        InvalidateRegion(x, y, 1, 1, m_CurrentLayer);
+        POINT screenPos = m_pCamera->WorldToScreen((float)tile.x, (float)tile.y);
+        graphics.DrawImage(tileSprite, screenPos.x, screenPos.y, m_GridSize, m_GridSize);
     }
 }
 
-void TileMapEditor::RemoveTile(int x, int y)
+void TileMapEditor::RenderCulledTiles(HDC hdc)
 {
-    if (!IsValidPosition(x, y)) return;
+    // 컬링 최적화: 화면에 보이는 타일만 렌더링
+    RECT clientRect;
+    GetClientRect(GetActiveWindow(), &clientRect);
 
-    bool changed = false;
+    float worldLeft, worldTop, worldRight, worldBottom;
+    m_pCamera->ScreenToWorld(0, 0, worldLeft, worldTop);
+    m_pCamera->ScreenToWorld(clientRect.right, clientRect.bottom, worldRight, worldBottom);
 
-    if (m_CurrentLayer == LayerType::GROUND)
+    // 여백 추가 (화면 경계 근처의 타일도 렌더링)
+    int margin = m_GridSize * 2;
+    worldLeft -= margin;
+    worldTop -= margin;
+    worldRight += margin;
+    worldBottom += margin;
+
+    Graphics graphics(hdc);
+    int renderedCount = 0;
+
+    for (const auto& tilePair : m_TileMap)
     {
-        if (m_GroundLayer[y][x].tileID != 0)
+        const TileData& tile = tilePair.second;
+        if (tile.isEmpty) continue;
+
+        // 컬링 검사
+        if (tile.x + m_GridSize < worldLeft || tile.x > worldRight ||
+            tile.y + m_GridSize < worldTop || tile.y > worldBottom)
         {
-            m_GroundLayer[y][x].tileID = 0;
-            m_GroundLayer[y][x].fileName = L"";
-            changed = true;
+            continue; // 화면 밖의 타일은 건너뛰기
         }
-    }
-    else if (m_CurrentLayer == LayerType::UPPER_GROUND)
-    {
-        if (m_UpperGroundLayer[y][x].tileID != 0)
-        {
-            m_UpperGroundLayer[y][x].tileID = 0;
-            m_UpperGroundLayer[y][x].fileName = L"";
-            changed = true;
-        }
-    }
-    else if (m_CurrentLayer == LayerType::COLLIDER)
-    {
-        if (m_ColliderLayer[y][x].hasCollider)
-        {
-            m_ColliderLayer[y][x].hasCollider = false;
-            changed = true;
-        }
+
+        Bitmap* tileSprite = ResourceManager::GetInstance()->GetSprite(tile.tileName);
+        if (!tileSprite) continue;
+
+        POINT screenPos = m_pCamera->WorldToScreen((float)tile.x, (float)tile.y);
+        graphics.DrawImage(tileSprite, screenPos.x, screenPos.y, m_GridSize, m_GridSize);
+        renderedCount++;
     }
 
-    // 변경된 경우에만 더티 영역 추가
-    if (changed)
-    {
-        InvalidateRegion(x, y, 1, 1, m_CurrentLayer);
-    }
+    // 렌더링 통계 (디버그용)
+    SetTextColor(hdc, RGB(255, 255, 0));
+    SetBkMode(hdc, TRANSPARENT);
+    wstring stats = L"Rendered: " + to_wstring(renderedCount) + L"/" + to_wstring(m_TileMap.size());
+    TextOut(hdc, 10, 50, stats.c_str(), stats.length());
 }
 
-void TileMapEditor::InvalidateRegion(int x, int y, int width, int height, LayerType layer)
+void TileMapEditor::SaveMap()
 {
-    DirtyRegion region;
-    region.x = x;
-    region.y = y;
-    region.width = width;
-    region.height = height;
-    region.layer = layer;
-
-    m_DirtyRegions.push_back(region);
-    m_BatchesDirty = true;
+    wstring filename = GenerateMapFileName();
+    SaveMapWithTileNames(filename);
 }
 
-void TileMapEditor::UpdateRenderBatches()
+void TileMapEditor::SaveMapWithTileNames(const wstring& filename)
 {
-    if (!m_BatchesDirty) return;
-
-    // 기존 배치 클리어
-    for (int layer = 0; layer < 3; ++layer)
+    wofstream file(filename);
+    if (!file.is_open())
     {
-        m_RenderBatches[layer].clear();
+        wcout << L"파일 저장 실패: " << filename << endl;
+        return;
     }
 
-    // Ground 레이어 배치 생성
-    for (int y = m_VisibleStartY; y <= m_VisibleEndY; ++y)
-    {
-        for (int x = m_VisibleStartX; x <= m_VisibleEndX; ++x)
-        {
-            if (IsValidPosition(x, y) && m_GroundLayer[y][x].tileID > 0)
-            {
-                int tileID = m_GroundLayer[y][x].tileID;
-                RECT pos = {
-                    x * m_TileSize - m_ViewportX,
-                    y * m_TileSize - m_ViewportY,
-                    (x + 1) * m_TileSize - m_ViewportX,
-                    (y + 1) * m_TileSize - m_ViewportY
-                };
+    // 헤더 정보
+    file << L"# Tile Map Data" << endl;
+    file << L"# Format: TileName X Y" << endl;
+    file << L"GridSize=" << m_GridSize << endl;
+    file << L"TileCount=" << m_TileMap.size() << endl;
+    file << endl;
 
-                auto& batch = m_RenderBatches[0][tileID];
-                if (batch.bitmap == nullptr)
-                {
-                    batch.bitmap = ResourceManager::GetInstance()->GetTileBitmapByID(tileID);
-                    batch.tileID = tileID;
-                }
-                batch.positions.push_back(pos);
-            }
+    // 타일 데이터 (파일명 기반으로 저장)
+    for (const auto& tilePair : m_TileMap)
+    {
+        const TileData& tile = tilePair.second;
+        if (!tile.isEmpty)
+        {
+            file << tile.tileName << L" " << tilePair.first.first << L" " << tilePair.first.second << endl;
         }
     }
 
-    // UpperGround 레이어 배치 생성
-    for (int y = m_VisibleStartY; y <= m_VisibleEndY; ++y)
-    {
-        for (int x = m_VisibleStartX; x <= m_VisibleEndX; ++x)
-        {
-            if (IsValidPosition(x, y) && m_UpperGroundLayer[y][x].tileID > 0)
-            {
-                int tileID = m_UpperGroundLayer[y][x].tileID;
-                RECT pos = {
-                    x * m_TileSize - m_ViewportX,
-                    y * m_TileSize - m_ViewportY,
-                    (x + 1) * m_TileSize - m_ViewportX,
-                    (y + 1) * m_TileSize - m_ViewportY
-                };
+    file.close();
+    wcout << L"맵 저장 완료: " << filename << L" (타일 " << m_TileMap.size() << L"개)" << endl;
+}
 
-                auto& batch = m_RenderBatches[1][tileID];
-                if (batch.bitmap == nullptr)
-                {
-                    batch.bitmap = ResourceManager::GetInstance()->GetTileBitmapByID(tileID);
-                    batch.tileID = tileID;
-                }
-                batch.positions.push_back(pos);
-            }
+void TileMapEditor::LoadMap()
+{
+    // 가장 최근 맵 파일 찾기
+    wstring filename = L"Maps/latest_map.txt";
+    LoadMapWithTileNames(filename);
+}
+
+void TileMapEditor::LoadMapWithTileNames(const wstring& filename)
+{
+    wifstream file(filename);
+    if (!file.is_open())
+    {
+        wcout << L"파일 로드 실패: " << filename << endl;
+        return;
+    }
+
+    m_TileMap.clear();
+    wstring line;
+    int loadedTiles = 0;
+
+    while (getline(file, line))
+    {
+        // 주석이나 빈 줄 건너뛰기
+        if (line.empty() || line[0] == L'#') continue;
+
+        // 설정 라인들
+        if (line.find(L"GridSize=") == 0)
+        {
+            m_GridSize = stoi(line.substr(9));
+            continue;
+        }
+        if (line.find(L"TileCount=") == 0) continue;
+
+        // 타일 데이터 파싱
+        wistringstream iss(line);
+        wstring tileName;
+        int gridX, gridY;
+
+        if (iss >> tileName >> gridX >> gridY)
+        {
+            pair<int, int> gridPos = make_pair(gridX, gridY);
+            m_TileMap[gridPos] = TileData(tileName, gridX * m_GridSize, gridY * m_GridSize);
+            loadedTiles++;
         }
     }
 
-    m_BatchesDirty = false;
+    file.close();
+    wcout << L"맵 로드 완료: " << filename << L" (타일 " << loadedTiles << L"개)" << endl;
 }
 
-void TileMapEditor::RenderWithBatching(HDC hdc)
+wstring TileMapEditor::GenerateMapFileName()
 {
-    UpdateRenderBatches();
+    // Maps 디렉토리 생성
+    filesystem::create_directories(L"Maps");
 
-    // Ground 레이어 배치 렌더링
-    for (const auto& batchPair : m_RenderBatches[0])
-    {
-        const RenderBatch& batch = batchPair.second;
-        if (batch.bitmap)
-        {
-            for (const RECT& pos : batch.positions)
-            {
-                ResourceManager::GetInstance()->DrawBitmap(hdc, batch.bitmap,
-                    pos.left, pos.top,
-                    pos.right - pos.left, pos.bottom - pos.top);
-            }
-        }
-    }
+    // 현재 시간 기반 파일명 생성
+    time_t now = time(0);
+    tm* timeinfo = localtime(&now);
 
-    // UpperGround 레이어 배치 렌더링
-    for (const auto& batchPair : m_RenderBatches[1])
-    {
-        const RenderBatch& batch = batchPair.second;
-        if (batch.bitmap)
-        {
-            for (const RECT& pos : batch.positions)
-            {
-                    ResourceManager::GetInstance()->DrawBitmap(hdc, batch.bitmap,
-                    pos.left, pos.top,
-                    pos.right - pos.left, pos.bottom - pos.top);
-            }
-        }
-    }
+    wchar_t buffer[256];
+    wcsftime(buffer, sizeof(buffer) / sizeof(wchar_t), L"Maps/map_%Y%m%d_%H%M%S.txt", timeinfo);
+
+    // latest_map.txt로도 복사 저장
+    wstring latestPath = L"Maps/latest_map.txt";
+
+    return wstring(buffer);
 }
 
-void TileMapEditor::SetSelectedTileID(int tileID)
+void TileMapEditor::Release()
 {
-    m_SelectedTileID = tileID;
-    m_SelectedTileFileName = GetFileNameFromTileID(tileID);
-}
-
-void TileMapEditor::SaveMap(const wstring& fileName)
-{
-    // TileMapEditor 데이터를 FileManager 형식으로 변환
-    TileMapSaveData saveData;
-
-    // 룸 정보 설정
-    saveData.roomType = 1;
-    saveData.gridWidth = m_MapWidth;
-    saveData.gridHeight = m_MapHeight;
-    saveData.canSpawnMonsters = true;
-    saveData.doors[0] = true;  // North
-    saveData.doors[1] = false; // East
-    saveData.doors[2] = false; // South
-    saveData.doors[3] = false; // West
-
-    // 레이어 데이터 초기화
-    saveData.groundLayer.resize(m_MapHeight);
-    saveData.upperGroundLayer.resize(m_MapHeight);
-    saveData.colliderLayer.resize(m_MapHeight);
-
-    for (int y = 0; y < m_MapHeight; ++y)
-    {
-        saveData.groundLayer[y].resize(m_MapWidth, 0);
-        saveData.upperGroundLayer[y].resize(m_MapWidth, 0);
-        saveData.colliderLayer[y].resize(m_MapWidth, false);
-    }
-
-    // 타일 데이터 복사
-    for (int y = 0; y < m_MapHeight; ++y)
-    {
-        for (int x = 0; x < m_MapWidth; ++x)
-        {
-            // Ground 레이어 (타일 ID)
-            saveData.groundLayer[y][x] = m_GroundLayer[y][x].tileID;
-
-            // UpperGround 레이어 (타일 ID)
-            saveData.upperGroundLayer[y][x] = m_UpperGroundLayer[y][x].tileID;
-
-            // Collider 레이어 (boolean)
-            saveData.colliderLayer[y][x] = m_ColliderLayer[y][x].hasCollider;
-        }
-    }
-
-    // FileManager를 통해 저장
-    if (FileManager::GetInstance()->SaveTileMap(fileName, saveData))
-    {
-        cout << "Map saved successfully: ";
-        wcout << fileName << endl;
-
-        // 통계 출력
-        auto stats = FileManager::GetInstance()->GetMapStatistics(fileName);
-        cout << "Map Statistics:" << endl;
-        cout << "  Total Tiles: " << stats.totalTiles << endl;
-        cout << "  Unique Tile Types: " << stats.uniqueTileCount << endl;
-        cout << "  Colliders: " << stats.colliderCount << endl;
-        cout << "  File Size: " << stats.fileSize << " bytes" << endl;
-    }
-    else
-    {
-        cout << "Failed to save map: ";
-        wcout << fileName << endl;
-    }
-}
-
-void TileMapEditor::LoadMap(const wstring& fileName)
-{
-    TileMapSaveData loadData;
-
-    if (FileManager::GetInstance()->LoadTileMap(fileName, loadData))
-    {
-        // 맵 크기 조정
-        SetGridSize(loadData.gridWidth, loadData.gridHeight);
-
-        // 타일 데이터 복사
-        for (int y = 0; y < m_MapHeight; ++y)
-        {
-            for (int x = 0; x < m_MapWidth; ++x)
-            {
-                // Ground 레이어 로드
-                m_GroundLayer[y][x].tileID = loadData.groundLayer[y][x];
-                m_GroundLayer[y][x].fileName = GetFileNameFromTileID(loadData.groundLayer[y][x]);
-
-                // UpperGround 레이어 로드
-                m_UpperGroundLayer[y][x].tileID = loadData.upperGroundLayer[y][x];
-                m_UpperGroundLayer[y][x].fileName = GetFileNameFromTileID(loadData.upperGroundLayer[y][x]);
-
-                // Collider 레이어 로드
-                m_ColliderLayer[y][x].hasCollider = loadData.colliderLayer[y][x];
-            }
-        }
-
-        // 업데이트 플래그 설정
-        m_NeedUpdate = true;
-        m_BatchesDirty = true;
-        m_DirtyRegions.clear();
-
-        cout << "Map loaded successfully: ";
-        wcout << fileName << endl;
-
-        // 로드된 맵 정보 출력
-        cout << "Map Info:" << endl;
-        cout << "  Size: " << loadData.gridWidth << "x" << loadData.gridHeight << endl;
-        cout << "  Room Type: " << loadData.roomType << endl;
-        cout << "  Can Spawn Monsters: " << (loadData.canSpawnMonsters ? "Yes" : "No") << endl;
-
-        // 통계 출력
-        auto stats = FileManager::GetInstance()->GetMapStatistics(fileName);
-        cout << "  Total Tiles: " << stats.totalTiles << endl;
-        cout << "  Colliders: " << stats.colliderCount << endl;
-    }
-    else
-    {
-        cout << "Failed to load map: ";
-        wcout << fileName << endl;
-    }
-}
-
-void TileMapEditor::ClearMap()
-{
-    for (int y = 0; y < m_MapHeight; ++y)
-    {
-        for (int x = 0; x < m_MapWidth; ++x)
-        {
-            m_GroundLayer[y][x] = TileInfo{ 0, L"" };
-            m_UpperGroundLayer[y][x] = TileInfo{ 0, L"" };
-            m_ColliderLayer[y][x] = ColliderTile{ false };
-        }
-    }
-    m_NeedUpdate = true;
-    m_BatchesDirty = true;
-
-    // 더티 영역 클리어
-    m_DirtyRegions.clear();
-}
-
-void TileMapEditor::SetGridSize(int width, int height)
-{
-    m_MapWidth = width;
-    m_MapHeight = height;
-
-    // 레이어 크기 조정
-    m_GroundLayer.resize(height);
-    m_UpperGroundLayer.resize(height);
-    m_ColliderLayer.resize(height);
-
-    for (int y = 0; y < height; ++y)
-    {
-        m_GroundLayer[y].resize(width, TileInfo{ 0, L"" });
-        m_UpperGroundLayer[y].resize(width, TileInfo{ 0, L"" });
-        m_ColliderLayer[y].resize(width, ColliderTile{ false });
-    }
-
-    m_NeedUpdate = true;
-    m_BatchesDirty = true;
-
-    // 더티 영역 클리어
-    m_DirtyRegions.clear();
-}
-
-void TileMapEditor::SetViewport(int x, int y, int width, int height)
-{
-    m_ViewportX = x;
-    m_ViewportY = y;
-    m_ViewportWidth = width;
-    m_ViewportHeight = height;
-    m_NeedUpdate = true;
-}
-
-void TileMapEditor::UpdateVisibleTiles()
-{
-    // 화면에 보이는 타일 범위 계산 (성능 최적화)
-    m_VisibleStartX = max(0, m_ViewportX / m_TileSize - 1);
-    m_VisibleStartY = max(0, m_ViewportY / m_TileSize - 1);
-    m_VisibleEndX = min(m_MapWidth - 1, (m_ViewportX + m_ViewportWidth) / m_TileSize + 1);
-    m_VisibleEndY = min(m_MapHeight - 1, (m_ViewportY + m_ViewportHeight) / m_TileSize + 1);
-
-    // 가시 영역이 변경되면 배치 재생성 필요
-    m_BatchesDirty = true;
-}
-
-bool TileMapEditor::IsValidPosition(int x, int y) const
-{
-    return x >= 0 && x < m_MapWidth && y >= 0 && y < m_MapHeight;
-}
-
-int TileMapEditor::GetTileIDFromResourceManager(const wstring& fileName)
-{
-    auto it = m_FileNameToTileID.find(fileName);
-    return (it != m_FileNameToTileID.end()) ? it->second : 0;
-}
-
-wstring TileMapEditor::GetFileNameFromTileID(int tileID)
-{
-    auto it = m_TileIDToFileName.find(tileID);
-    return (it != m_TileIDToFileName.end()) ? it->second : L"";
+    m_TileMap.clear();
 }

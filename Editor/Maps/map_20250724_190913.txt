@@ -1,0 +1,19 @@
+# Tile Map Data
+# Format: TileName X Y
+GridSize=32
+TileCount=14
+
+CaveFloor_0 -1 -2
+CaveFloor_0 -1 -1
+CaveFloor_0 -1 0
+CaveFloor_0 -1 1
+CaveFloor_0 -1 2
+CaveFloor_0 -1 3
+CaveFloor_0 -1 4
+CaveFloor_0 0 -2
+CaveFloor_0 0 -1
+CaveFloor_0 0 0
+CaveFloor_0 0 1
+CaveFloor_0 0 2
+CaveFloor_0 0 3
+CaveFloor_0 0 4

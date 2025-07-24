@@ -26,6 +26,7 @@
 #include <memory>
 #include <typeindex>
 #include <functional>
+#include <set>
 
 #include <ole2.h>
 #include <gdiplus.h>

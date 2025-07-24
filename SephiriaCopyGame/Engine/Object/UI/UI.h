@@ -1,30 +1,6 @@
 #pragma once
 #include <Engine/Object/IPrototypeable/IPrototypeable.h>
 
-// UI 앵커 타입
-enum class UIAnchor
-{
-    TopLeft,
-    TopCenter,
-    TopRight,
-    CenterLeft,
-    Center,
-    CenterRight,
-    BottomLeft,
-    BottomCenter,
-    BottomRight
-};
-
-// UI 이벤트 타입
-enum class UIEventType
-{
-    None,
-    Click,
-    Hover,
-    Press,
-    Release
-};
-
 // UI 이벤트 콜백 함수 타입
 using UIEventCallback = function<void()>;
 

@@ -93,7 +93,7 @@
     <ClInclude Include="Source\Scene\TitleScene.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Object\Component\AniMation\Animation.h">
+    <ClInclude Include="Engine\Object\Component\Animation\Animation.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Object\Component\Camera\Camera.h">
@@ -188,7 +188,7 @@
     <ClCompile Include="Source\Scene\TitleScene.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Object\Component\AniMation\Animation.cpp">
+    <ClCompile Include="Engine\Object\Component\Animation\Animation.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Object\Component\Camera\Camera.cpp">

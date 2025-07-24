@@ -137,7 +137,7 @@
     <ClInclude Include="Source\Class\Monster\Dynamite_Mole\DynamiteMoleAI.h" />
     <ClInclude Include="Source\Class\Monster\Duelist_Mole\DuelistMoleAI.h" />
     <ClInclude Include="Engine\Object\Component\Camera\Camera.h" />
-    <ClInclude Include="Engine\Object\Component\AniMation\Animation.h" />
+    <ClInclude Include="Engine\Object\Component\Animation\Animation.h" />
     <ClInclude Include="Engine\Object\Component\Collider\CircleCollider.h" />
     <ClInclude Include="Engine\Object\Component\Collider\BoxCollider.h" />
     <ClInclude Include="Engine\Object\Component\Collider\Collider.h" />
@@ -174,7 +174,7 @@
     <ClCompile Include="Source\Class\Monster\Dynamite_Mole\DynamiteMoleAI.cpp" />
     <ClCompile Include="Source\Class\Monster\Duelist_Mole\DuelistMoleAI.cpp" />
     <ClCompile Include="Engine\Object\Component\Camera\Camera.cpp" />
-    <ClCompile Include="Engine\Object\Component\AniMation\Animation.cpp" />
+    <ClCompile Include="Engine\Object\Component\Animation\Animation.cpp" />
     <ClCompile Include="Engine\Object\Component\Collider\CircleCollider.cpp" />
     <ClCompile Include="Engine\Object\Component\Collider\BoxCollider.cpp" />
     <ClCompile Include="Engine\Object\Component\Collider\Collider.cpp" />

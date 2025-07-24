@@ -1,4 +1,4 @@
-#include "../pch.h"
+﻿#include "../pch.h"
 #include "MainEditor.h"
 #include "TileMapEditor/TileMapEditor.h"
 #include "TilePalette/TilePalette.h"
@@ -7,16 +7,22 @@
 #include "../Managers/InputManager/InputManager.h"
 #include "../Managers/ResourceManager/ResourceManager.h"
 #include "../Managers/FileManager/FileManager.h"
-#include <filesystem>
+
+extern HWND g_hWnd;
 
 MainEditor::MainEditor()
     : m_hDC(nullptr)
+    , m_memDC(nullptr)
+    , m_memBitmap(nullptr)
+    , m_oldBitmap(nullptr)
     , m_pTileMapEditor(nullptr)
     , m_pTilePalette(nullptr)
     , m_pPropPalette(nullptr)
     , m_pCamera(nullptr)
     , m_IsInitialized(false)
     , m_PropMode(false)
+    , m_ScreenWidth(1280)
+    , m_ScreenHeight(960)
 {
 }
 
@@ -29,39 +35,37 @@ void MainEditor::Initialize()
 {
     if (m_IsInitialized) return;
 
-    // HDC ���
-    m_hDC = GetDC(g_hWnd);
-
-    // �Ŵ��� �ʱ�ȭ
+    // 리소스 매니저 초기화
     ResourceManager::GetInstance()->Init();
-    InputManager::GetInstance();
-    FileManager::GetInstance();
+    ResourceManager::GetInstance()->LoadAllResources();
 
-    // ������ ������Ʈ�� ���� �� �ʱ�ȭ
-    m_pTileMapEditor = new TileMapEditor();
-    m_pTileMapEditor->Init();
-
-    m_pTilePalette = new TilePalette();
-    m_pTilePalette->Init();
-    m_pTilePalette->SetPosition(100, 100);
-    m_pTilePalette->SetSize(500, 600);
-
-    m_pPropPalette = new PropPalette();
-    m_pPropPalette->Init();
-    m_pPropPalette->SetPosition(220, 10);
-    m_pPropPalette->SetSize(200, 400);
-
-    m_pCamera = new Camera();
-
-    // �ʱ� ����Ʈ ����
+    // 더블 버퍼링 설정
+    m_hDC = GetDC(g_hWnd);
     RECT clientRect;
     GetClientRect(g_hWnd, &clientRect);
-    int viewportWidth = clientRect.right - 440;
-    int viewportHeight = clientRect.bottom;
-    m_pTileMapEditor->SetViewport(0, 0, viewportWidth, viewportHeight);
+    m_ScreenWidth = clientRect.right;
+    m_ScreenHeight = clientRect.bottom;
+
+    m_memDC = CreateCompatibleDC(m_hDC);
+    m_memBitmap = CreateCompatibleBitmap(m_hDC, m_ScreenWidth, m_ScreenHeight);
+    m_oldBitmap = (HBITMAP)SelectObject(m_memDC, m_memBitmap);
+
+    // 각 컴포넌트 초기화 (순서 중요)
+    m_pCamera = new Camera();
+    m_pCamera->SetPosition(0, 0);
+
+    m_pTilePalette = new TilePalette();
+    m_pTilePalette->Initialize();
+
+    m_pPropPalette = new PropPalette();
+    m_pPropPalette->Initialize();
+
+    m_pTileMapEditor = new TileMapEditor();
+    m_pTileMapEditor->Initialize(m_pCamera);
+    m_pTileMapEditor->SetTilePalette(m_pTilePalette);  // 타일 팔레트 연결
 
     m_IsInitialized = true;
-
+    cout << "에디터 초기화 완료!" << endl;
     PrintControls();
 }
 
@@ -69,62 +73,520 @@ void MainEditor::Update()
 {
     if (!m_IsInitialized) return;
 
-    // �Է� �Ŵ��� ������Ʈ
-    InputManager::GetInstance()->Update();
-
-    // ���� �Է� ó��
     HandleGlobalInput();
 
-    // ������ ������Ʈ�� ������Ʈ
+    m_pCamera->Update();
+    m_pTileMapEditor->Update();
+
     if (!m_PropMode)
     {
         m_pTilePalette->Update();
-
-        // ���õ� Ÿ���� Ÿ�ϸ� �����Ϳ� ����
-        int selectedTileID = m_pTilePalette->GetSelectedTileID();
-        if (selectedTileID > 0)
-        {
-            m_pTileMapEditor->SetSelectedTileID(selectedTileID);
-        }
     }
     else
     {
         m_pPropPalette->Update();
     }
-
-    m_pTileMapEditor->Update();
-    m_pCamera->Update();
 }
 
 void MainEditor::Render()
 {
     if (!m_IsInitialized) return;
 
-    // ȭ�� Ŭ����
-    RECT clientRect;
-    GetClientRect(g_hWnd, &clientRect);
-    HBRUSH bgBrush = CreateSolidBrush(RGB(64, 64, 64));
-    FillRect(m_hDC, &clientRect, bgBrush);
-    DeleteObject(bgBrush);
+    // 백버퍼 클리어
+    RECT clearRect = { 0, 0, m_ScreenWidth, m_ScreenHeight };
+    FillRect(m_memDC, &clearRect, (HBRUSH)GetStockObject(BLACK_BRUSH));
 
-    // Ÿ�ϸ� ������ ����
-    m_pTileMapEditor->Render(m_hDC);
+    // 메인 렌더링
+    m_pTileMapEditor->Render(m_memDC);
 
     if (!m_PropMode)
     {
-        m_pTilePalette->Render(m_hDC);
+        m_pTilePalette->Render(m_memDC);
     }
     else
     {
-        m_pPropPalette->Render(m_hDC);
+        m_pPropPalette->Render(m_memDC);
     }
 
-    // UI ���� ������
-    RenderUI(m_hDC);
+    RenderUI(m_memDC);
+
+    // 프론트 버퍼로 복사 (더블 버퍼링)
+    BitBlt(m_hDC, 0, 0, m_ScreenWidth, m_ScreenHeight, m_memDC, 0, 0, SRCCOPY);
+}
+
+void MainEditor::HandleGlobalInput()
+{
+    // 카메라 이동 (방향키)
+    float cameraSpeed = 5.0f;
+    if (GetAsyncKeyState(VK_LEFT) & 0x8000)
+    {
+        m_pCamera->SetPosition(m_pCamera->GetX() - cameraSpeed, m_pCamera->GetY());
+    }
+    if (GetAsyncKeyState(VK_RIGHT) & 0x8000)
+    {
+        m_pCamera->SetPosition(m_pCamera->GetX() + cameraSpeed, m_pCamera->GetY());
+    }
+    if (GetAsyncKeyState(VK_UP) & 0x8000)
+    {
+        m_pCamera->SetPosition(m_pCamera->GetX(), m_pCamera->GetY() - cameraSpeed);
+    }
+    if (GetAsyncKeyState(VK_DOWN) & 0x8000)
+    {
+        m_pCamera->SetPosition(m_pCamera->GetX(), m_pCamera->GetY() + cameraSpeed);
+    }
+
+    // 기능 키들
+    if (GetAsyncKeyState('S') & 0x8000)
+    {
+        static bool savePressed = false;
+        if (!savePressed)
+        {
+            SaveCurrentMap();
+            savePressed = true;
+        }
+    }
+    else
+    {
+        static bool savePressed = false;
+        savePressed = false;
+    }
+
+    if (GetAsyncKeyState('L') & 0x8000)
+    {
+        static bool loadPressed = false;
+        if (!loadPressed)
+        {
+            LoadMap();
+            loadPressed = true;
+        }
+    }
+    else
+    {
+        static bool loadPressed = false;
+        loadPressed = false;
+    }
+
+    if (GetAsyncKeyState('T') & 0x8000)
+    {
+        static bool togglePressed = false;
+        if (!togglePressed)
+        {
+            TogglePropMode();
+            togglePressed = true;
+        }
+    }
+    else
+    {
+        static bool togglePressed = false;
+        togglePressed = false;
+    }
+}
+
+void MainEditor::RenderUI(HDC hdc)
+{
+    // UI 정보 표시
+    SetTextColor(hdc, RGB(255, 255, 255));
+    SetBkMode(hdc, TRANSPARENT);
+
+    wstring modeText = m_PropMode ? L"Mode: Prop" : L"Mode: Tile";
+    TextOut(hdc, 10, 10, modeText.c_str(), modeText.length());
+
+    wstring cameraInfo = L"Camera: (" + to_wstring((int)m_pCamera->GetX()) +
+        L", " + to_wstring((int)m_pCamera->GetY()) + L")";
+    TextOut(hdc, 10, 30, cameraInfo.c_str(), cameraInfo.length());
+
+    // 컨트롤 가이드
+    TextOut(hdc, 10, m_ScreenHeight - 100, L"Controls:", 9);
+    TextOut(hdc, 10, m_ScreenHeight - 80, L"Arrow Keys: Move Camera", 23);
+    TextOut(hdc, 10, m_ScreenHeight - 60, L"S: Save Map", 11);
+    TextOut(hdc, 10, m_ScreenHeight - 40, L"L: Load Map", 11);
+    TextOut(hdc, 10, m_ScreenHeight - 20, L"T: Toggle Tile/Prop Mode", 24);
+}
+
+void MainEditor::SaveCurrentMap()
+{
+    if (m_pTileMapEditor)
+    {
+        m_pTileMapEditor->SaveMap();
+        cout << "맵을 저장했습니다." << endl;
+    }
+}
+
+void MainEditor::LoadMap()
+{
+    if (m_pTileMapEditor)
+    {
+        m_pTileMapEditor->LoadMap();
+        cout << "맵을 불러왔습니다." << endl;
+    }
+}
+
+void MainEditor::CreateNewMap()
+{
+    if (!m_pTileMapEditor) return;
+
+    // 기존 맵 데이터 클리어
+    m_pTileMapEditor->Release();
+    m_pTileMapEditor->Initialize(m_pCamera);
+    m_pTileMapEditor->SetTilePalette(m_pTilePalette);
+
+    // 카메라 초기 위치로 이동
+    m_pCamera->SetPosition(0, 0);
+
+    cout << "새로운 맵을 생성했습니다." << endl;
+}
+
+void MainEditor::ChangeGridSize()
+{
+    if (!m_pTileMapEditor) return;
+
+    int currentGridSize = m_pTileMapEditor->GetGridSize();
+    int newGridSize = currentGridSize;
+
+    cout << "\n=== 그리드 크기 변경 ===" << endl;
+    cout << "현재 그리드 크기: " << currentGridSize << "px" << endl;
+    cout << "사용 가능한 그리드 크기: 16, 32, 48, 64" << endl;
+    cout << "새로운 그리드 크기를 선택하세요 (1~4): ";
+
+    // 키보드 입력 대기
+    bool inputReceived = false;
+    while (!inputReceived)
+    {
+        if (GetAsyncKeyState('1') & 0x8000)
+        {
+            newGridSize = 16;
+            inputReceived = true;
+        }
+        else if (GetAsyncKeyState('2') & 0x8000)
+        {
+            newGridSize = 32;
+            inputReceived = true;
+        }
+        else if (GetAsyncKeyState('3') & 0x8000)
+        {
+            newGridSize = 48;
+            inputReceived = true;
+        }
+        else if (GetAsyncKeyState('4') & 0x8000)
+        {
+            newGridSize = 64;
+            inputReceived = true;
+        }
+        else if (GetAsyncKeyState(VK_ESCAPE) & 0x8000)
+        {
+            cout << "그리드 크기 변경을 취소했습니다." << endl;
+            return;
+        }
+
+        Sleep(50); // CPU 사용률 감소
+    }
+
+    m_pTileMapEditor->SetGridSize(newGridSize);
+    cout << "그리드 크기를 " << newGridSize << "px로 변경했습니다." << endl;
+
+    // 키 입력 후 잠깐 대기 (중복 입력 방지)
+    Sleep(200);
+}
+
+void MainEditor::ChangeRoomType()
+{
+    cout << "\n=== 방 타입 변경 ===" << endl;
+    cout << "사용 가능한 방 타입:" << endl;
+    cout << "1. 던전방 (어두운 테마)" << endl;
+    cout << "2. 동굴방 (자연 테마)" << endl;
+    cout << "3. 성방 (밝은 테마)" << endl;
+    cout << "4. 보스방 (특별한 테마)" << endl;
+    cout << "방 타입을 선택하세요 (1~4): ";
+
+    bool inputReceived = false;
+    wstring roomType = L"Unknown";
+
+    while (!inputReceived)
+    {
+        if (GetAsyncKeyState('1') & 0x8000)
+        {
+            roomType = L"Dungeon";
+            inputReceived = true;
+        }
+        else if (GetAsyncKeyState('2') & 0x8000)
+        {
+            roomType = L"Cave";
+            inputReceived = true;
+        }
+        else if (GetAsyncKeyState('3') & 0x8000)
+        {
+            roomType = L"Castle";
+            inputReceived = true;
+        }
+        else if (GetAsyncKeyState('4') & 0x8000)
+        {
+            roomType = L"Boss";
+            inputReceived = true;
+        }
+        else if (GetAsyncKeyState(VK_ESCAPE) & 0x8000)
+        {
+            cout << "방 타입 변경을 취소했습니다." << endl;
+            return;
+        }
+
+        Sleep(50);
+    }
+
+    wcout << L"방 타입을 " << roomType << L"으로 설정했습니다." << endl;
+
+    // 여기서 실제로는 맵의 메타데이터에 방 타입을 저장하거나
+    // 특정 타일셋을 자동으로 로드하는 등의 작업을 할 수 있습니다.
+
+    Sleep(200);
+}
+
+void MainEditor::TogglePropMode()
+{
+    m_PropMode = !m_PropMode;
+    cout << "모드 변경: " << (m_PropMode ? "Prop" : "Tile") << endl;
+}
+
+void MainEditor::ShowMapFileList()
+{
+    cout << "\n=== 저장된 맵 파일 목록 ===" << endl;
+
+    try
+    {
+        if (!filesystem::exists(L"Maps"))
+        {
+            cout << "Maps 폴더가 존재하지 않습니다." << endl;
+            return;
+        }
+
+        vector<filesystem::path> mapFiles;
+
+        // 맵 파일들 수집
+        for (const auto& entry : filesystem::directory_iterator(L"Maps"))
+        {
+            if (entry.is_regular_file())
+            {
+                wstring extension = entry.path().extension().wstring();
+                if (extension == L".txt")
+                {
+                    mapFiles.push_back(entry.path());
+                }
+            }
+        }
+
+        if (mapFiles.empty())
+        {
+            cout << "저장된 맵 파일이 없습니다." << endl;
+            return;
+        }
+
+        // 파일 정렬 (최신 순)
+        sort(mapFiles.begin(), mapFiles.end(), [](const filesystem::path& a, const filesystem::path& b) {
+            return filesystem::last_write_time(a) > filesystem::last_write_time(b);
+            });
+
+        cout << "총 " << mapFiles.size() << "개의 맵 파일:" << endl;
+        cout << "----------------------------------------" << endl;
+
+        int index = 1;
+        for (const auto& mapFile : mapFiles)
+        {
+            wstring filename = mapFile.filename().wstring();
+            auto writeTime = filesystem::last_write_time(mapFile);
+            auto size = filesystem::file_size(mapFile);
+
+            wcout << index << L". " << filename;
+            cout << " (" << size << " bytes)" << endl;
+
+            index++;
+            if (index > 10) // 최대 10개만 표시
+            {
+                cout << "... 그리고 " << (mapFiles.size() - 10) << "개 더" << endl;
+                break;
+            }
+        }
+
+        cout << "----------------------------------------" << endl;
+        cout << "L키를 눌러 최신 맵을 로드할 수 있습니다." << endl;
+    }
+    catch (const filesystem::filesystem_error& ex)
+    {
+        cout << "파일 시스템 오류: " << ex.what() << endl;
+    }
+}
+
+void MainEditor::CleanupOldFiles()
+{
+    cout << "\n=== 오래된 파일 정리 ===" << endl;
+
+    try
+    {
+        if (!filesystem::exists(L"Maps"))
+        {
+            cout << "Maps 폴더가 존재하지 않습니다." << endl;
+            return;
+        }
+
+        vector<filesystem::path> mapFiles;
+
+        // 맵 파일들 수집
+        for (const auto& entry : filesystem::directory_iterator(L"Maps"))
+        {
+            if (entry.is_regular_file())
+            {
+                wstring extension = entry.path().extension().wstring();
+                wstring filename = entry.path().filename().wstring();
+
+                // latest_map.txt는 제외
+                if (extension == L".txt" && filename != L"latest_map.txt")
+                {
+                    mapFiles.push_back(entry.path());
+                }
+            }
+        }
+
+        if (mapFiles.size() <= 5) // 5개 이하면 정리하지 않음
+        {
+            cout << "정리할 파일이 없습니다. (총 " << mapFiles.size() << "개 파일)" << endl;
+            return;
+        }
+
+        // 파일 정렬 (오래된 순)
+        sort(mapFiles.begin(), mapFiles.end(), [](const filesystem::path& a, const filesystem::path& b) {
+            return filesystem::last_write_time(a) < filesystem::last_write_time(b);
+            });
+
+        // 가장 오래된 파일들 삭제 (최신 5개만 유지)
+        int filesToDelete = mapFiles.size() - 5;
+        int deletedCount = 0;
+
+        cout << "가장 오래된 " << filesToDelete << "개의 파일을 삭제합니다..." << endl;
+
+        for (int i = 0; i < filesToDelete; i++)
+        {
+            try
+            {
+                wstring filename = mapFiles[i].filename().wstring();
+                filesystem::remove(mapFiles[i]);
+                wcout << L"삭제됨: " << filename << endl;
+                deletedCount++;
+            }
+            catch (const filesystem::filesystem_error& ex)
+            {
+                cout << "파일 삭제 실패: " << ex.what() << endl;
+            }
+        }
+
+        cout << "정리 완료: " << deletedCount << "개 파일 삭제됨" << endl;
+        cout << "남은 파일: " << (mapFiles.size() - deletedCount) << "개" << endl;
+    }
+    catch (const filesystem::filesystem_error& ex)
+    {
+        cout << "파일 시스템 오류: " << ex.what() << endl;
+    }
+}
+
+
+void MainEditor::ValidateCurrentMap()
+{
+    cout << "\n=== 현재 맵 검증 ===" << endl;
+
+    if (!m_pTileMapEditor)
+    {
+        cout << "타일맵 에디터가 초기화되지 않았습니다." << endl;
+        return;
+    }
+
+    // 기본 검증 정보들
+    int gridSize = m_pTileMapEditor->GetGridSize();
+    cout << "그리드 크기: " << gridSize << "px" << endl;
+
+    // 카메라 위치
+    cout << "카메라 위치: (" << (int)m_pCamera->GetX() << ", " << (int)m_pCamera->GetY() << ")" << endl;
+
+    // 리소스 상태 검증
+    cout << "\n--- 리소스 상태 ---" << endl;
+    auto tileNames = ResourceManager::GetInstance()->GetTileNames();
+    auto propNames = ResourceManager::GetInstance()->GetPropNames();
+
+    cout << "로드된 타일: " << tileNames.size() << "개" << endl;
+    cout << "로드된 프롭: " << propNames.size() << "개" << endl;
+
+    if (tileNames.empty())
+    {
+        cout << "⚠️ 경고: 타일이 로드되지 않았습니다. Resources/Tiles/ 폴더를 확인하세요." << endl;
+    }
+
+    // 선택된 타일 검증
+    if (m_pTilePalette)
+    {
+        wstring selectedTile = m_pTilePalette->GetSelectedTile();
+        if (!selectedTile.empty())
+        {
+            wcout << L"선택된 타일: " << selectedTile << endl;
+
+            Bitmap* sprite = ResourceManager::GetInstance()->GetSprite(selectedTile);
+            if (sprite)
+            {
+                cout << "✓ 선택된 타일이 정상적으로 로드됨" << endl;
+            }
+            else
+            {
+                cout << "⚠️ 경고: 선택된 타일을 찾을 수 없습니다." << endl;
+            }
+        }
+        else
+        {
+            cout << "선택된 타일 없음" << endl;
+        }
+    }
+
+    // 현재 모드
+    cout << "현재 모드: " << (m_PropMode ? "Prop" : "Tile") << endl;
+
+    // 시스템 상태
+    cout << "\n--- 시스템 상태 ---" << endl;
+    cout << "더블 버퍼링: " << (m_memDC ? "활성화" : "비활성화") << endl;
+    cout << "초기화 상태: " << (m_IsInitialized ? "완료" : "미완료") << endl;
+
+    cout << "\n검증 완료!" << endl;
+}
+
+void MainEditor::PrintControls()
+{
+    cout << "\n=== 에디터 컨트롤 ===" << endl;
+    cout << "방향키: 카메라 이동" << endl;
+    cout << "S: 맵 저장" << endl;
+    cout << "L: 맵 로드" << endl;
+    cout << "T: 타일/프롭 모드 전환" << endl;
+    cout << "===================" << endl;
 }
 
 void MainEditor::Release()
 {
+    if (m_oldBitmap)
+    {
+        SelectObject(m_memDC, m_oldBitmap);
+        m_oldBitmap = nullptr;
+    }
+
+    if (m_memBitmap)
+    {
+        DeleteObject(m_memBitmap);
+        m_memBitmap = nullptr;
+    }
+
+    if (m_memDC)
+    {
+        DeleteDC(m_memDC);
+        m_memDC = nullptr;
+    }
+
+    if (m_hDC)
+    {
+        ReleaseDC(g_hWnd, m_hDC);
+        m_hDC = nullptr;
+    }
+
     if (m_pTileMapEditor)
     {
         delete m_pTileMapEditor;
@@ -149,319 +611,5 @@ void MainEditor::Release()
         m_pCamera = nullptr;
     }
 
-    if (m_hDC)
-    {
-        ReleaseDC(g_hWnd, m_hDC);
-        m_hDC = nullptr;
-    }
-
-    m_IsInitialized = false;
-}
-
-void MainEditor::HandleGlobalInput()
-{
-
-    // ���� (Ctrl + S)
-    if (InputManager::GetInstance()->IsKeyDown('S') && InputManager::GetInstance()->IsKeyPressed(VK_CONTROL))
-    {
-        SaveCurrentMap();
-    }
-
-    // �ε� (Ctrl + O)
-    if (InputManager::GetInstance()->IsKeyDown('O') && InputManager::GetInstance()->IsKeyPressed(VK_CONTROL))
-    {
-        LoadMap();
-    }
-
-    // �� �� ���� (Ctrl + N)
-    if (InputManager::GetInstance()->IsKeyDown('N') && InputManager::GetInstance()->IsKeyPressed(VK_CONTROL))
-    {
-        CreateNewMap();
-    }
-
-    // Prop ��� ��� (Tab)
-    if (InputManager::GetInstance()->IsKeyDown(VK_TAB))
-    {
-        TogglePropMode();
-    }
-
-    // ���� (F1)
-    if (InputManager::GetInstance()->IsKeyDown(VK_F1))
-    {
-        PrintControls();
-    }
-
-    if (InputManager::GetInstance()->IsKeyDown('L') && InputManager::GetInstance()->IsKeyPressed(VK_CONTROL))
-    {
-        ShowMapFileList();
-    }
-
-    // �� ���� (Ctrl + V)
-    if (InputManager::GetInstance()->IsKeyDown('V') && InputManager::GetInstance()->IsKeyPressed(VK_CONTROL))
-    {
-        ValidateCurrentMap();
-    }
-
-    // ���� ���� (Ctrl + Delete)
-    if (InputManager::GetInstance()->IsKeyDown(VK_DELETE) && InputManager::GetInstance()->IsKeyPressed(VK_CONTROL))
-    {
-        CleanupOldFiles();
-    }
-}
-
-void MainEditor::RenderUI(HDC hdc)
-{
-    // ���� ���� ���� ǥ��
-    RECT infoRect;
-    GetClientRect(g_hWnd, &infoRect);
-    infoRect.left = infoRect.right - 300;
-    infoRect.top = infoRect.bottom - 100;
-
-    SetBkMode(hdc, TRANSPARENT);
-    SetTextColor(hdc, RGB(255, 255, 255));
-
-    string layerNames[] = { "Ground", "UpperGround", "Collider" };
-    LayerType currentLayer = m_pTileMapEditor->GetCurrentLayer();
-
-    string infoText = "Mode: " + string(m_PropMode ? "Prop" : "Tile") + "\n";
-    infoText += "Layer: " + layerNames[(int)currentLayer] + " (" + to_string((int)currentLayer + 1) + ")\n";
-
-    if (!m_PropMode)
-    {
-        int selectedTileID = m_pTilePalette->GetSelectedTileID();
-        infoText += "Selected Tile ID: " + to_string(selectedTileID) + "\n";
-    }
-
-    DrawTextA(hdc, infoText.c_str(), -1, &infoRect, DT_LEFT | DT_TOP);
-
-    // ��Ʈ�� ��Ʈ
-    RECT hintRect = infoRect;
-    hintRect.top += 60;
-    string hintText = "F1: Help | Tab: Toggle Mode\n";
-    hintText += "1,2,3: Layer | Ctrl+S: Save\n";
-    hintText += "Ctrl+O: Load | Ctrl+N: New";
-
-    DrawTextA(hdc, hintText.c_str(), -1, &hintRect, DT_LEFT | DT_TOP);
-}
-
-void MainEditor::SaveCurrentMap()
-{
-    // Ÿ�ӽ����� ��� ���ϸ� ���� (������ ������� ����)
-    time_t now = time(0);
-    tm timeStruct;
-    localtime_s(&timeStruct, &now);
-
-    wchar_t fileName[256];
-    swprintf_s(fileName, L"../Maps/map_%04d%02d%02d_%02d%02d%02d_game.txt",
-        timeStruct.tm_year + 1900, timeStruct.tm_mon + 1, timeStruct.tm_mday,
-        timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec);
-
-    // ���� �� ��� ����
-    wstring backupName = wstring(fileName);
-    if (FileManager::GetInstance()->FileExists(backupName))
-    {
-        FileManager::GetInstance()->CreateBackup(backupName);
-    }
-
-    m_pTileMapEditor->SaveMap(fileName);
-
-    // ���� �� ��� ���
-    auto stats = FileManager::GetInstance()->GetMapStatistics(fileName);
-    cout << "\n=== SAVE COMPLETED ===" << endl;
-    cout << "File: ";
-    wcout << fileName << endl;
-    cout << "Statistics:" << endl;
-    cout << "  Total Tiles: " << stats.totalTiles << endl;
-    cout << "  Unique Tile Types: " << stats.uniqueTileCount << endl;
-    cout << "  Colliders: " << stats.colliderCount << endl;
-    cout << "  File Size: " << stats.fileSize << " bytes" << endl;
-
-    if (!stats.tileUsageCount.empty())
-    {
-        cout << "  Most Used Tiles:" << endl;
-        vector<pair<int, int>> sortedTiles(stats.tileUsageCount.begin(), stats.tileUsageCount.end());
-        sort(sortedTiles.begin(), sortedTiles.end(),
-            [](const pair<int, int>& a, const pair<int, int>& b) {
-                return a.second > b.second;
-            });
-
-        int displayCount = min(5, (int)sortedTiles.size());
-        for (int i = 0; i < displayCount; ++i)
-        {
-            cout << "    Tile ID " << sortedTiles[i].first
-                << ": " << sortedTiles[i].second << " uses" << endl;
-        }
-    }
-    cout << "======================" << endl;
-}
-
-void MainEditor::LoadMap()
-{
-    // �ֽ� �� ���� �ڵ� ã��
-    wstring latestFile = FileManager::GetInstance()->GetLatestMapFile();
-
-    if (latestFile.empty())
-    {
-        cout << "No map files found in directory" << endl;
-
-        // �� ���� ��� ǥ��
-        auto mapFiles = FileManager::GetInstance()->GetMapFileList();
-        if (!mapFiles.empty())
-        {
-            cout << "Available map files:" << endl;
-            for (const auto& file : mapFiles)
-            {
-                wcout << L"  " << file << endl;
-
-                // ���� ��� ������ ǥ��
-                auto stats = FileManager::GetInstance()->GetMapStatistics(file);
-                cout << "    (" << stats.totalTiles << " tiles, "
-                    << stats.colliderCount << " colliders)" << endl;
-            }
-        }
-        return;
-    }
-
-    cout << "\n=== LOADING MAP ===" << endl;
-    cout << "File: ";
-    wcout << latestFile << endl;
-
-    m_pTileMapEditor->LoadMap(latestFile);
-
-    cout << "===================" << endl;
-}
-
-void MainEditor::CreateNewMap()
-{
-    cout << "\n=== NEW MAP CREATED ===" << endl;
-    cout << "Grid Size: 50x50" << endl;
-    cout << "All layers cleared" << endl;
-    cout << "======================" << endl;
-
-    m_pTileMapEditor->ClearMap();
-}
-
-void MainEditor::ChangeGridSize()
-{
-    // �⺻ �׸��� ũ�� ���� (�����δ� �Է� ���̾�α� ���)
-    m_pTileMapEditor->SetGridSize(50, 50);
-    cout << "Grid size changed to 50x50" << endl;
-}
-
-void MainEditor::ChangeRoomType()
-{
-    // �� Ÿ�� ���� ���� (�ʿ�� ����)
-    cout << "Room type changed" << endl;
-}
-
-void MainEditor::TogglePropMode()
-{
-    m_PropMode = !m_PropMode;
-    cout << "Mode switched to: " << (m_PropMode ? "Prop" : "Tile") << endl;
-}
-
-void MainEditor::ShowMapFileList()
-{
-    auto mapFiles = FileManager::GetInstance()->GetMapFileList();
-
-    cout << "\n=== MAP FILE LIST ===" << endl;
-    if (mapFiles.empty())
-    {
-        cout << "No map files found" << endl;
-    }
-    else
-    {
-        for (size_t i = 0; i < mapFiles.size(); ++i)
-        {
-            cout << "[" << (i + 1) << "] ";
-            wcout << mapFiles[i] << endl;
-
-            auto stats = FileManager::GetInstance()->GetMapStatistics(mapFiles[i]);
-            cout << "    Size: " << stats.fileSize << " bytes, ";
-            cout << "Tiles: " << stats.totalTiles << ", ";
-            cout << "Colliders: " << stats.colliderCount << endl;
-        }
-    }
-    cout << "====================" << endl;
-}
-
-void MainEditor::CleanupOldFiles()
-{
-    cout << "\n=== CLEANING UP OLD FILES ===" << endl;
-
-    // 7�� �̻� �� ��� ���� ����
-    FileManager::GetInstance()->CleanOldBackups();
-
-    cout << "Old backup files cleaned" << endl;
-    cout << "============================" << endl;
-}
-
-void MainEditor::ValidateCurrentMap()
-{
-    // ���� ���� �ӽ� ���Ϸ� �����Ͽ� ����
-    wstring tempFile = L"../Maps/temp_validation.txt";
-
-    m_pTileMapEditor->SaveMap(tempFile);
-
-    TileMapSaveData validationData;
-
-    if (FileManager::GetInstance()->LoadTileMap(tempFile, validationData))
-    {
-        if (FileManager::GetInstance()->ValidateMapData(validationData))
-        {
-            cout << "\n=== MAP VALIDATION ===" << endl;
-            cout << "Map data is valid!" << endl;
-
-            auto stats = FileManager::GetInstance()->GetMapStatistics(tempFile);
-            cout << "Statistics:" << endl;
-            cout << "  Total Tiles: " << stats.totalTiles << endl;
-            cout << "  Unique Types: " << stats.uniqueTileCount << endl;
-            cout << "  Colliders: " << stats.colliderCount << endl;
-            cout << "======================" << endl;
-        }
-        else
-        {
-            cout << "Map validation failed!" << endl;
-        }
-    }
-
-    // �ӽ� ���� ����
-    FileManager::GetInstance()->DeleteMapFile(tempFile);
-}
-
-void MainEditor::PrintControls()
-{
-    cout << "\n=== TILE MAP EDITOR CONTROLS ===" << endl;
-    cout << "LAYER SYSTEM:" << endl;
-    cout << "  1 - Ground Layer (stores tile IDs)" << endl;
-    cout << "  2 - UpperGround Layer (stores tile IDs)" << endl;
-    cout << "  3 - Collider Layer (stores 0/1 values, shows green boxes)" << endl;
-    cout << endl;
-    cout << "EDITING:" << endl;
-    cout << "  Left Click  - Place tile/collider" << endl;
-    cout << "  Right Click - Remove tile/collider" << endl;
-    cout << "  Tab         - Toggle between Tile and Prop mode" << endl;
-    cout << endl;
-    cout << "FILE OPERATIONS:" << endl;
-    cout << "  Ctrl + S    - Save current map (with auto-backup)" << endl;
-    cout << "  Ctrl + O    - Load latest map" << endl;
-    cout << "  Ctrl + N    - Create new map" << endl;
-    cout << "  Ctrl + L    - List all map files with statistics" << endl;
-    cout << "  Ctrl + V    - Validate current map data" << endl;
-    cout << "  Ctrl + Del  - Cleanup old backup files" << endl;
-    cout << endl;
-    cout << "VIEW OPTIONS:" << endl;
-    cout << "  G           - Toggle grid display" << endl;
-    cout << "  C           - Toggle collider display" << endl;
-    cout << endl;
-    cout << "FEATURES:" << endl;
-    cout << "  - Tile IDs synchronized between editor and game" << endl;
-    cout << "  - Automatic backup creation before saving" << endl;
-    cout << "  - Map validation and corruption recovery" << endl;
-    cout << "  - Detailed file statistics and usage analytics" << endl;
-    cout << "  - Performance optimized batch rendering" << endl;
-    cout << "  - Smart file management with cleanup utilities" << endl;
-    cout << endl;
-    cout << "  F1          - Show this help" << endl;
-    cout << "=================================" << endl;
+    ResourceManager::GetInstance()->Release();
 }

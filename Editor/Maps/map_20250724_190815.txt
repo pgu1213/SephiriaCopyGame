@@ -1,0 +1,5 @@
+# Tile Map Data
+# Format: TileName X Y
+GridSize=32
+TileCount=0
+

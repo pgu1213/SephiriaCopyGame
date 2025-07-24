@@ -1,2 +1,55 @@
-﻿  TitleScene.cpp
-  SephiriaCopyGame.vcxproj -> C:\Dev\SephiriaCopyGame\x64\Debug\SephiriaCopyGame.exe
+﻿  pch.cpp
+  Client.cpp
+  Engine.cpp
+  InputManager.cpp
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Client.cpp(123,1): warning C4002: 함수 같은 매크로 호출 'CreateWindowW'에 대해 인수가 너무 많습니다.
+  (소스 파일 '/Client.cpp'을(를) 컴파일하는 중)
+  
+  MainManager.cpp
+  PrototypeFactory.cpp
+  PrototypeManager.cpp
+  ResourceManager.cpp
+  SceneManager.cpp
+  SoundManager.cpp
+  TimeManager.cpp
+  UIManager.cpp
+  Animation.cpp
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\Component\Animation\Animation.cpp(92,65): warning C4267: '=': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  (소스 파일 '/Engine/Object/Component/Animation/Animation.cpp'을(를) 컴파일하는 중)
+  
+  Camera.cpp
+  BoxCollider.cpp
+  CircleCollider.cpp
+  Collider.cpp
+  Component.cpp
+  SpriteRenderer.cpp
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\Component\SpriteRenderer\SpriteRenderer.cpp(175,34): warning C4244: '인수': 'double'에서 'Gdiplus::REAL'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  (소스 파일 '/Engine/Object/Component/SpriteRenderer/SpriteRenderer.cpp'을(를) 컴파일하는 중)
+  
+  IPrototypeable.cpp
+  Object.cpp
+  코드를 생성하고 있습니다...
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Client.cpp(84,1): warning C4715: 'wWinMain': 모든 제어 경로에서 값을 반환하지는 않습니다.
+  컴파일하고 있습니다...
+  UIButton.cpp
+  UI.cpp
+  Scene.cpp
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Scene\Scene.cpp(118,25): error C2039: 'GetName': 'UI'의 멤버가 아닙니다.
+  (소스 파일 '/Engine/Scene/Scene.cpp'을(를) 컴파일하는 중)
+      C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\UI.h(7,7):
+      'UI' 선언을 참조하십시오.
+  
+  DuelistMoleAI.cpp
+  DynamiteMoleAI.cpp
+  MoleGuardAI.cpp
+  PlayerMovement.cpp
+  PlayerWeapon.cpp
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Source\Class\Player\PlayerWeapon.cpp(74,26): warning C4244: '초기화 중': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  (소스 파일 '/Source/Class/Player/PlayerWeapon.cpp'을(를) 컴파일하는 중)
+  
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Source\Class\Player\PlayerWeapon.cpp(82,29): warning C4244: '초기화 중': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  (소스 파일 '/Source/Class/Player/PlayerWeapon.cpp'을(를) 컴파일하는 중)
+  
+  GameScene.cpp
+  TitleScene.cpp
+  코드를 생성하고 있습니다...

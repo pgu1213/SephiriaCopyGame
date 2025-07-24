@@ -2,13 +2,10 @@
 #include "ResourceManager.h"
 #include <filesystem>
 
-// 정적 멤버 초기화
 ULONG_PTR ResourceManager::GdiplusToken = 0;
-map<wstring, Gdiplus::Bitmap*> ResourceManager::TileMap;
-map<wstring, Gdiplus::Bitmap*> ResourceManager::PropMap;
-map<int, TileResource> ResourceManager::TileResourcesById;
-map<wstring, int> ResourceManager::TileFileNameToId;
-int ResourceManager::NextTileID = 1; // 0은 빈 타일용으로 예약
+map<wstring, Gdiplus::Bitmap*> ResourceManager::ImageMap;
+set<wstring> ResourceManager::TileNames;
+set<wstring> ResourceManager::PropNames;
 
 ResourceManager::ResourceManager()
 {
@@ -21,253 +18,146 @@ ResourceManager::~ResourceManager()
 
 bool ResourceManager::Init()
 {
-    // GDI+ 초기화
     GdiplusStartupInput gdiplusStartupInput;
     if (GdiplusStartup(&GdiplusToken, &gdiplusStartupInput, NULL) != Ok)
     {
         return false;
     }
-    
-    LoadTileResources();
-    LoadPropResources();
-    AssignTileIDs(); // 타일들에 ID 할당
-    
     return true;
 }
 
 void ResourceManager::Release()
 {
-    // 타일 리소스 해제
-    for (auto& pair : TileMap)
+    for (auto& pair : ImageMap)
     {
         if (pair.second)
         {
             delete pair.second;
         }
     }
-    TileMap.clear();
-    
-    // Prop 리소스 해제
-    for (auto& pair : PropMap)
-    {
-        if (pair.second)
-        {
-            delete pair.second;
-        }
-    }
-    PropMap.clear();
-    
-    // 타일 ID 관련 데이터 정리
-    TileResourcesById.clear();
-    TileFileNameToId.clear();
-    NextTileID = 1;
-    
-    // GDI+ 종료
-    if (GdiplusToken != 0)
+    ImageMap.clear();
+    TileNames.clear();
+    PropNames.clear();
+
+    if (GdiplusToken)
     {
         GdiplusShutdown(GdiplusToken);
         GdiplusToken = 0;
     }
 }
 
-void ResourceManager::LoadTileResources()
+void ResourceManager::LoadAllResources()
 {
-    wstring tilePath = L"../Resources/Tiles/";
-    
+    // 디렉토리가 없으면 생성
+    filesystem::create_directories(L"Resources/Tiles");
+    filesystem::create_directories(L"Resources/Props");
+
+    LoadResourcesFromDirectory(L"Resources/Tiles");
+    LoadResourcesFromDirectory(L"Resources/Props");
+
+    cout << "로드된 타일: " << TileNames.size() << "개" << endl;
+    cout << "로드된 프롭: " << PropNames.size() << "개" << endl;
+}
+
+void ResourceManager::LoadResourcesFromDirectory(const wstring& directory)
+{
     try
     {
-        for (const auto& entry : filesystem::directory_iterator(tilePath))
+        for (const auto& entry : filesystem::directory_iterator(directory))
         {
             if (entry.is_regular_file())
             {
-                wstring fileName = entry.path().filename().wstring();
                 wstring extension = entry.path().extension().wstring();
-                
-                // 이미지 파일만 로드
+                transform(extension.begin(), extension.end(), extension.begin(), towlower);
+
                 if (extension == L".png" || extension == L".jpg" || extension == L".bmp")
                 {
                     wstring fullPath = entry.path().wstring();
+                    wstring fileName = GetFileNameWithoutExtension(fullPath);
+
                     Bitmap* bitmap = new Bitmap(fullPath.c_str());
-                    
                     if (bitmap && bitmap->GetLastStatus() == Ok)
                     {
-                        TileMap[fileName] = bitmap;
+                        ImageMap[fileName] = bitmap;
+                        ClassifyResource(fileName);
+                        wcout << L"로드됨: " << fileName << endl;
                     }
                     else
                     {
                         delete bitmap;
+                        wcout << L"로드 실패: " << fullPath << endl;
                     }
                 }
             }
         }
     }
-    catch (const filesystem::filesystem_error& e)
+    catch (const filesystem::filesystem_error& ex)
     {
-        // 디렉토리가 없거나 접근할 수 없는 경우
-        wcout << L"Tile directory not found or inaccessible: " << tilePath << endl;
+        cout << "디렉토리 접근 오류: " << ex.what() << endl;
     }
 }
 
-void ResourceManager::LoadPropResources()
+wstring ResourceManager::GetFileNameWithoutExtension(const wstring& filePath)
 {
-    wstring propPath = L"../Resources/Props/";
-    
-    try
+    filesystem::path path(filePath);
+    return path.stem().wstring();
+}
+
+void ResourceManager::ClassifyResource(const wstring& fileName)
+{
+    // 간단한 분류 방식: 파일명에 특정 키워드가 있으면 분류
+    wstring lowerFileName = fileName;
+    transform(lowerFileName.begin(), lowerFileName.end(), lowerFileName.begin(), towlower);
+
+    // 프롭 키워드들
+    vector<wstring> propKeywords = { L"prop", L"object", L"item", L"furniture", L"decoration" };
+
+    bool isProp = false;
+    for (const auto& keyword : propKeywords)
     {
-        for (const auto& entry : filesystem::directory_iterator(propPath))
+        if (lowerFileName.find(keyword) != wstring::npos)
         {
-            if (entry.is_regular_file())
-            {
-                wstring fileName = entry.path().filename().wstring();
-                wstring extension = entry.path().extension().wstring();
-                
-                // 이미지 파일만 로드
-                if (extension == L".png" || extension == L".jpg" || extension == L".bmp")
-                {
-                    wstring fullPath = entry.path().wstring();
-                    Bitmap* bitmap = new Bitmap(fullPath.c_str());
-                    
-                    if (bitmap && bitmap->GetLastStatus() == Ok)
-                    {
-                        PropMap[fileName] = bitmap;
-                    }
-                    else
-                    {
-                        delete bitmap;
-                    }
-                }
-            }
+            isProp = true;
+            break;
         }
     }
-    catch (const filesystem::filesystem_error& e)
+
+    if (isProp)
     {
-        // 디렉토리가 없거나 접근할 수 없는 경우
-        wcout << L"Prop directory not found or inaccessible: " << propPath << endl;
+        PropNames.insert(fileName);
+    }
+    else
+    {
+        TileNames.insert(fileName);
     }
 }
 
-void ResourceManager::AssignTileIDs()
+Bitmap* ResourceManager::GetSprite(const wstring& spriteName)
 {
-    // 기존 타일들에 순차적으로 ID 할당
-    for (const auto& pair : TileMap)
+    auto it = ImageMap.find(spriteName);
+    if (it != ImageMap.end())
     {
-        const wstring& fileName = pair.first;
-        Bitmap* bitmap = pair.second;
-        
-        TileResource resource;
-        resource.id = NextTileID;
-        resource.fileName = fileName;
-        resource.bitmap = bitmap;
-        
-        TileResourcesById[NextTileID] = resource;
-        TileFileNameToId[fileName] = NextTileID;
-        
-        NextTileID++;
+        return it->second;
     }
+    return nullptr;
 }
 
-Gdiplus::Bitmap* ResourceManager::GetTileBitmap(const wstring& fileName)
+bool ResourceManager::IsTile(const wstring& spriteName)
 {
-    auto it = TileMap.find(fileName);
-    return (it != TileMap.end()) ? it->second : nullptr;
+    return TileNames.find(spriteName) != TileNames.end();
 }
 
-Gdiplus::Bitmap* ResourceManager::GetPropBitmap(const wstring& fileName)
+bool ResourceManager::IsProp(const wstring& spriteName)
 {
-    auto it = PropMap.find(fileName);
-    return (it != PropMap.end()) ? it->second : nullptr;
+    return PropNames.find(spriteName) != PropNames.end();
 }
 
-Gdiplus::Bitmap* ResourceManager::GetTileBitmapByID(int tileID)
+vector<wstring> ResourceManager::GetTileNames()
 {
-    auto it = TileResourcesById.find(tileID);
-    return (it != TileResourcesById.end()) ? it->second.bitmap : nullptr;
+    return vector<wstring>(TileNames.begin(), TileNames.end());
 }
 
-int ResourceManager::GetTileIDByFileName(const wstring& fileName)
+vector<wstring> ResourceManager::GetPropNames()
 {
-    auto it = TileFileNameToId.find(fileName);
-    return (it != TileFileNameToId.end()) ? it->second : 0;
-}
-
-wstring ResourceManager::GetFileNameByTileID(int tileID)
-{
-    auto it = TileResourcesById.find(tileID);
-    return (it != TileResourcesById.end()) ? it->second.fileName : L"";
-}
-
-vector<TileResource> ResourceManager::GetAllTileResources() const
-{
-    vector<TileResource> resources;
-    for (const auto& pair : TileResourcesById)
-    {
-        resources.push_back(pair.second);
-    }
-    return resources;
-}
-
-vector<wstring> ResourceManager::GetTileFileNames() const
-{
-    vector<wstring> fileNames;
-    for (const auto& pair : TileMap)
-    {
-        fileNames.push_back(pair.first);
-    }
-    return fileNames;
-}
-
-vector<wstring> ResourceManager::GetPropFileNames() const
-{
-    vector<wstring> fileNames;
-    for (const auto& pair : PropMap)
-    {
-        fileNames.push_back(pair.first);
-    }
-    return fileNames;
-}
-
-bool ResourceManager::RegisterTileResource(int id, const wstring& fileName, Gdiplus::Bitmap* bitmap)
-{
-    // 이미 존재하는 ID인지 확인
-    if (TileResourcesById.find(id) != TileResourcesById.end())
-    {
-        return false;
-    }
-    
-    TileResource resource;
-    resource.id = id;
-    resource.fileName = fileName;
-    resource.bitmap = bitmap;
-    
-    TileResourcesById[id] = resource;
-    TileFileNameToId[fileName] = id;
-    TileMap[fileName] = bitmap;
-    
-    // NextTileID 업데이트
-    if (id >= NextTileID)
-    {
-        NextTileID = id + 1;
-    }
-    
-    return true;
-}
-
-void ResourceManager::DrawBitmap(HDC hdc, Gdiplus::Bitmap* bitmap, int x, int y, int width, int height)
-{
-    if (!bitmap) return;
-    
-    Graphics graphics(hdc);
-    graphics.SetInterpolationMode(InterpolationModeNearestNeighbor); // 픽셀 아트에 적합
-    graphics.DrawImage(bitmap, x, y, width, height);
-}
-
-void ResourceManager::DrawBitmapSection(HDC hdc, Gdiplus::Bitmap* bitmap, int destX, int destY, int destWidth, int destHeight, int srcX, int srcY, int srcWidth, int srcHeight)
-{
-    if (!bitmap) return;
-    
-    Graphics graphics(hdc);
-    graphics.SetInterpolationMode(InterpolationModeNearestNeighbor);
-    
-    Rect destRect(destX, destY, destWidth, destHeight);
-    graphics.DrawImage(bitmap, destRect, srcX, srcY, srcWidth, srcHeight, UnitPixel);
+    return vector<wstring>(PropNames.begin(), PropNames.end());
 }
