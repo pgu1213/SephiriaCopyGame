@@ -1,5 +1,6 @@
 #include "../../pch.h"
 #include "ConfigManager.h"
+#include "../../Editor/TileMapEditor/TileMapEditor.h"
 
 ConfigManager::ConfigManager()
 {
@@ -44,7 +45,7 @@ void ConfigManager::SetRoomType(RoomType type)
         SetDoor(DoorDirection::WEST, false);
         break;
 
-    case RoomType::COMBAT:
+    case RoomType::BATTLE:
     default:
         m_CurrentConfig.canSpawnMonsters = true;
         // 전투방은 여러 문이 있을 수 있음
@@ -143,7 +144,7 @@ const char* ConfigManager::GetRoomTypeName(RoomType type) const
     switch (type)
     {
     case RoomType::ENTRANCE: return "Entrance Room";
-    case RoomType::COMBAT: return "Combat Room";
+    case RoomType::BATTLE: return "Combat Room";
     case RoomType::EXIT: return "Exit Room";
     case RoomType::BOSS: return "Boss Room";
     default: return "Unknown";

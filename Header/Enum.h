@@ -43,3 +43,12 @@ enum class ButtonState
     Pressed,
     Disabled
 };
+
+// 방 타입
+enum class RoomType
+{
+    ENTRANCE = 0,   // 입구방
+    BATTLE = 1,     // 전투방
+    EXIT = 2,       // 출구방
+    BOSS = 3        // 보스방
+};

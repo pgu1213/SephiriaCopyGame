@@ -16,6 +16,7 @@ TileMapEditor::TileMapEditor()
     , m_RoomWidth(DEFAULT_ROOM_WIDTH)
     , m_RoomHeight(DEFAULT_ROOM_HEIGHT)
     , m_ShowRoomBounds(true)
+    , m_RoomType(RoomType::ENTRANCE) // 기본값은 입구방
     , m_LeftMousePressed(false)
     , m_RightMousePressed(false)
 {
@@ -165,6 +166,9 @@ void TileMapEditor::Render(HDC hdc)
     {
         RenderTiles(hdc);
     }
+
+    // 방 정보 렌더링
+    RenderRoomInfo(hdc);
 }
 
 void TileMapEditor::RenderGrid(HDC hdc)
@@ -275,10 +279,21 @@ void TileMapEditor::RenderCulledTiles(HDC hdc)
 
 void TileMapEditor::RenderRoomBounds(HDC hdc)
 {
-    HPEN boundsPen = CreatePen(PS_SOLID, 2, RGB(255, 0, 0)); // 빨간색 테두리
+    // 방 타입에 따른 테두리 색상
+    COLORREF boundsColor;
+    switch (m_RoomType)
+    {
+    case RoomType::ENTRANCE: boundsColor = RGB(0, 255, 0);   break; // 초록색
+    case RoomType::BATTLE:   boundsColor = RGB(255, 255, 0); break; // 노란색
+    case RoomType::EXIT:     boundsColor = RGB(0, 255, 255); break; // 청록색
+    case RoomType::BOSS:     boundsColor = RGB(255, 0, 255); break; // 마젠타
+    default:                 boundsColor = RGB(255, 0, 0);   break; // 빨간색
+    }
+
+    HPEN boundsPen = CreatePen(PS_SOLID, 3, boundsColor); // 두께 3으로 증가
     HPEN oldPen = (HPEN)SelectObject(hdc, boundsPen);
 
-    // 방 경계 계산 (월드 좌표)
+    // 방 경계 계산
     float worldLeft = 0;
     float worldTop = 0;
     float worldRight = m_RoomWidth * GRID_SIZE;
@@ -301,6 +316,57 @@ void TileMapEditor::RenderRoomBounds(HDC hdc)
     DeleteObject(boundsPen);
 }
 
+void TileMapEditor::SetRoomType(RoomType type)
+{
+    m_RoomType = type;
+    wcout << L"방 타입이 " << GetRoomTypeName() << L"으로 변경되었습니다." << endl;
+}
+
+wstring TileMapEditor::GetRoomTypeName() const
+{
+    switch (m_RoomType)
+    {
+    case RoomType::ENTRANCE: return L"입구방";
+    case RoomType::BATTLE:   return L"전투방";
+    case RoomType::EXIT:     return L"출구방";
+    case RoomType::BOSS:     return L"보스방";
+    default:                 return L"알 수 없음";
+    }
+}
+
+void TileMapEditor::RenderRoomInfo(HDC hdc)
+{
+    // 방 타입에 따른 색상 설정
+    COLORREF typeColor;
+    switch (m_RoomType)
+    {
+    case RoomType::ENTRANCE: typeColor = RGB(0, 255, 0);   break; // 초록색
+    case RoomType::BATTLE:   typeColor = RGB(255, 255, 0); break; // 노란색
+    case RoomType::EXIT:     typeColor = RGB(0, 255, 255); break; // 청록색
+    case RoomType::BOSS:     typeColor = RGB(255, 0, 255); break; // 마젠타
+    default:                 typeColor = RGB(255, 255, 255); break;
+    }
+
+    // 방 타입 텍스트 표시
+    SetTextColor(hdc, typeColor);
+    SetBkMode(hdc, TRANSPARENT);
+
+    wstring roomInfo = L"Room Type: " + GetRoomTypeName() + L" (ID: " + to_wstring(GetRoomTypeID()) + L")";
+
+    // 화면 우상단에 표시
+    RECT clientRect;
+    GetClientRect(GetActiveWindow(), &clientRect);
+    int textX = clientRect.right - 300;
+    int textY = 10;
+
+    TextOut(hdc, textX, textY, roomInfo.c_str(), roomInfo.length());
+
+    // 방 크기 정보도 함께 표시
+    SetTextColor(hdc, RGB(200, 200, 200));
+    wstring sizeInfo = L"Size: " + to_wstring(m_RoomWidth) + L" x " + to_wstring(m_RoomHeight) + L" grids";
+    TextOut(hdc, textX, textY + 20, sizeInfo.c_str(), sizeInfo.length());
+}
+
 void TileMapEditor::SaveMap()
 {
     wstring filename = GenerateMapFileName();
@@ -316,13 +382,18 @@ void TileMapEditor::SaveMapWithTileNames(const wstring& filename)
         return;
     }
 
-    // 헤더 정보
+    // 헤더 정보 (방 타입 포함)
     file << L"# Tile Map Data" << endl;
     file << L"# Format: TileName X Y" << endl;
+    file << L"GridSize=" << GRID_SIZE << endl;
+    file << L"RoomWidth=" << m_RoomWidth << endl;
+    file << L"RoomHeight=" << m_RoomHeight << endl;
+    file << L"RoomType=" << GetRoomTypeID() << endl; // 방 타입 ID 저장
+    file << L"RoomTypeName=" << GetRoomTypeName() << endl; // 방 타입 이름 저장 (가독성)
     file << L"TileCount=" << m_TileMap.size() << endl;
     file << endl;
 
-    // 타일 데이터 (파일명 기반으로 저장)
+    // 타일 데이터
     for (const auto& tilePair : m_TileMap)
     {
         const TileData& tile = tilePair.second;
@@ -333,7 +404,7 @@ void TileMapEditor::SaveMapWithTileNames(const wstring& filename)
     }
 
     file.close();
-    wcout << L"맵 저장 완료: " << filename << L" (타일 " << m_TileMap.size() << L"개)" << endl;
+    wcout << L"맵 저장 완료: " << filename << L" (방 타입: " << GetRoomTypeName() << L", 타일 " << m_TileMap.size() << L"개)" << endl;
 }
 
 void TileMapEditor::LoadMap()
@@ -373,7 +444,32 @@ void TileMapEditor::LoadMapWithTileNames(const wstring& filename)
         // 주석이나 빈 줄 건너뛰기
         if (line.empty() || line[0] == L'#') continue;
 
-        if (line.find(L"TileCount=") == 0) continue;
+        // 설정 라인들
+        if (line.find(L"GridSize=") == 0)
+        {
+            // 그리드 크기는 고정이므로 무시 (호환성 유지)
+            continue;
+        }
+        if (line.find(L"RoomWidth=") == 0)
+        {
+            m_RoomWidth = stoi(line.substr(10));
+            continue;
+        }
+        if (line.find(L"RoomHeight=") == 0)
+        {
+            m_RoomHeight = stoi(line.substr(11));
+            continue;
+        }
+        if (line.find(L"RoomType=") == 0)
+        {
+            int typeID = stoi(line.substr(9));
+            m_RoomType = static_cast<RoomType>(typeID);
+            continue;
+        }
+        if (line.find(L"RoomTypeName=") == 0 || line.find(L"TileCount=") == 0)
+        {
+            continue; // 스킵
+        }
 
         // 타일 데이터 파싱
         wistringstream iss(line);
@@ -383,13 +479,13 @@ void TileMapEditor::LoadMapWithTileNames(const wstring& filename)
         if (iss >> tileName >> gridX >> gridY)
         {
             pair<int, int> gridPos = make_pair(gridX, gridY);
-            m_TileMap[gridPos] = TileData(tileName, gridX, gridY);
+            m_TileMap[gridPos] = TileData(tileName, gridX * GRID_SIZE, gridY * GRID_SIZE);
             loadedTiles++;
         }
     }
 
     file.close();
-    wcout << L"맵 로드 완료: " << filename << L" (타일 " << loadedTiles << L"개)" << endl;
+    wcout << L"맵 로드 완료: " << filename << L" (방 타입: " << GetRoomTypeName() << L", 타일 " << loadedTiles << L"개)" << endl;
 }
 
 wstring TileMapEditor::GenerateMapFileName()

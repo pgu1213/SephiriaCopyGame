@@ -36,6 +36,13 @@ public:
 
     void SetTilePalette(class TilePalette* palette) { m_pTilePalette = palette; }
 
+    // 방 타입 관련 함수
+    void SetRoomType(RoomType type);
+    RoomType GetRoomType() const { return m_RoomType; }
+    wstring GetRoomTypeName() const;
+    void RenderRoomInfo(HDC hdc);
+    int GetRoomTypeID() const { return (int)m_RoomType; }
+
 private:
     void HandleInput();
     void PlaceTile();
@@ -65,6 +72,9 @@ private:
     int m_RoomWidth;  // 그리드 단위
     int m_RoomHeight; // 그리드 단위
     bool m_ShowRoomBounds;
+
+    // 방 타입 시스템
+    RoomType m_RoomType;
 
     // 마우스 상태
     bool m_LeftMousePressed;

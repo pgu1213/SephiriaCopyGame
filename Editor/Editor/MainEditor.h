@@ -18,7 +18,6 @@ public:
     void SaveCurrentMap();
     void LoadMap();
     void CreateNewMap();
-    void ChangeGridSize();
     void ChangeRoomType();
     void ChangeRoomSize();
     void TogglePropMode();

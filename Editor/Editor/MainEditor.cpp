@@ -122,7 +122,7 @@ void MainEditor::HandleGlobalInput()
 {
     auto inputMgr = InputManager::GetInstance();
 
-    // 카메라 이동 (방향키)
+    // 카메라 이동
     float cameraSpeed = 5.0f / m_pCamera->GetZoom();
     if (inputMgr->IsKeyPressed(VK_LEFT))
     {
@@ -175,10 +175,36 @@ void MainEditor::HandleGlobalInput()
         CreateNewMap();
     }
 
-    // 방 크기 조절 (R키)
     if (inputMgr->IsKeyDown('R'))
     {
         ChangeRoomSize();
+    }
+
+    // 방 타입 변경 (Y키)
+    if (inputMgr->IsKeyDown('Y'))
+    {
+        ChangeRoomType();
+    }
+
+    // 빠른 방 타입 변경 (숫자키)
+    if (inputMgr->IsKeyPressed(VK_CONTROL))
+    {
+        if (inputMgr->IsKeyDown('1'))
+        {
+            if (m_pTileMapEditor) m_pTileMapEditor->SetRoomType(RoomType::ENTRANCE);
+        }
+        if (inputMgr->IsKeyDown('2'))
+        {
+            if (m_pTileMapEditor) m_pTileMapEditor->SetRoomType(RoomType::BATTLE);
+        }
+        if (inputMgr->IsKeyDown('3'))
+        {
+            if (m_pTileMapEditor) m_pTileMapEditor->SetRoomType(RoomType::EXIT);
+        }
+        if (inputMgr->IsKeyDown('4'))
+        {
+            if (m_pTileMapEditor) m_pTileMapEditor->SetRoomType(RoomType::BOSS);
+        }
     }
 }
 
@@ -197,20 +223,18 @@ void MainEditor::RenderUI(HDC hdc)
     wstring zoomInfo = L"Zoom: " + to_wstring((int)(m_pCamera->GetZoom() * 100)) + L"%";
     TextOut(hdc, 10, 50, zoomInfo.c_str(), zoomInfo.length());
 
-    // 방 크기 정보 추가
-    if (m_pTileMapEditor)
-    {
-        wstring gridInfo = L"Grid: 16px (Fixed)";
-        TextOut(hdc, 10, 90, gridInfo.c_str(), gridInfo.length());
-    }
+    wstring gridInfo = L"Grid: 16px (Fixed)";
+    TextOut(hdc, 10, 90, gridInfo.c_str(), gridInfo.length());
 
-    // 컨트롤 가이드
-    TextOut(hdc, 10, m_ScreenHeight - 160, L"Controls:", 9);
-    TextOut(hdc, 10, m_ScreenHeight - 140, L"Arrow Keys: Move Camera", 23);
-    TextOut(hdc, 10, m_ScreenHeight - 120, L"Page Up/Down: Zoom In/Out", 25);
-    TextOut(hdc, 10, m_ScreenHeight - 100, L"S: Save, L: Load, T: Toggle Mode", 32);
-    TextOut(hdc, 10, m_ScreenHeight - 80, L"G: Toggle Grid, B: Toggle Bounds", 32);
-    TextOut(hdc, 10, m_ScreenHeight - 60, L"R: Change Room Size, N: New Map", 31);
+    // 컨트롤 가이드 (방 타입 관련 추가)
+    TextOut(hdc, 10, m_ScreenHeight - 180, L"Controls:", 9);
+    TextOut(hdc, 10, m_ScreenHeight - 160, L"Arrow Keys: Move Camera", 23);
+    TextOut(hdc, 10, m_ScreenHeight - 140, L"Page Up/Down: Zoom", 18);
+    TextOut(hdc, 10, m_ScreenHeight - 120, L"S: Save, L: Load, T: Toggle Mode", 32);
+    TextOut(hdc, 10, m_ScreenHeight - 100, L"G: Grid, B: Bounds, R: Room Size", 32);
+    TextOut(hdc, 10, m_ScreenHeight - 80, L"Y: Change Room Type", 19);
+    TextOut(hdc, 10, m_ScreenHeight - 60, L"Ctrl+1~4: Quick Room Type", 25);
+    TextOut(hdc, 10, m_ScreenHeight - 40, L"N: New Map", 10);
 }
 
 void MainEditor::SaveCurrentMap()
@@ -248,40 +272,42 @@ void MainEditor::CreateNewMap()
 
 void MainEditor::ChangeRoomType()
 {
+    if (!m_pTileMapEditor) return;
+
     cout << "\n=== 방 타입 변경 ===" << endl;
     cout << "사용 가능한 방 타입:" << endl;
-    cout << "1. 던전방 (어두운 테마)" << endl;
-    cout << "2. 동굴방 (자연 테마)" << endl;
-    cout << "3. 성방 (밝은 테마)" << endl;
-    cout << "4. 보스방 (특별한 테마)" << endl;
+    cout << "1. 입구방 (Entrance Room) - 플레이어가 시작하는 방" << endl;
+    cout << "2. 전투방 (Battle Room) - 몬스터와 전투하는 방" << endl;
+    cout << "3. 출구방 (Exit Room) - 다음 스테이지로 이동하는 방" << endl;
+    cout << "4. 보스방 (Boss Room) - 보스 몬스터와 전투하는 방" << endl;
     cout << "방 타입을 선택하세요 (1~4): ";
 
     bool inputReceived = false;
-    wstring roomType = L"Unknown";
+    RoomType newType = RoomType::ENTRANCE;
 
     while (!inputReceived)
     {
-        InputManager::GetInstance()->Update(); // 매 프레임 업데이트
+        InputManager::GetInstance()->Update();
         auto inputMgr = InputManager::GetInstance();
 
         if (inputMgr->IsKeyDown('1'))
         {
-            roomType = L"Dungeon";
+            newType = RoomType::ENTRANCE;
             inputReceived = true;
         }
         else if (inputMgr->IsKeyDown('2'))
         {
-            roomType = L"Cave";
+            newType = RoomType::BATTLE;
             inputReceived = true;
         }
         else if (inputMgr->IsKeyDown('3'))
         {
-            roomType = L"Castle";
+            newType = RoomType::EXIT;
             inputReceived = true;
         }
         else if (inputMgr->IsKeyDown('4'))
         {
-            roomType = L"Boss";
+            newType = RoomType::BOSS;
             inputReceived = true;
         }
         else if (inputMgr->IsKeyDown(VK_ESCAPE))
@@ -290,10 +316,10 @@ void MainEditor::ChangeRoomType()
             return;
         }
 
-        Sleep(16); // ~60FPS
+        Sleep(16);
     }
 
-    wcout << L"방 타입을 " << roomType << L"으로 설정했습니다." << endl;
+    m_pTileMapEditor->SetRoomType(newType);
 }
 
 void MainEditor::ChangeRoomSize()

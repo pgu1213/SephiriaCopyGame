@@ -1,14 +1,6 @@
 #pragma once
 #include "../SingletonManager/SingletonManager.h"
 
-enum class RoomType
-{
-    ENTRANCE = 0,
-    COMBAT = 1,
-    EXIT = 2,
-    BOSS = 3
-};
-
 enum class DoorDirection
 {
     NORTH = 0,
@@ -28,7 +20,7 @@ struct RoomConfig
     string roomName;
 
     RoomConfig()
-        : roomType(RoomType::COMBAT), canSpawnMonsters(true),
+        : roomType(RoomType::BATTLE), canSpawnMonsters(true),
         gridWidth(50), gridHeight(50), roomName("Untitled Room")
     {
         // 기본적으로 모든 문이 닫혀있음
