@@ -1,55 +1,75 @@
-﻿  pch.cpp
-  Client.cpp
-  Engine.cpp
-  InputManager.cpp
-C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Client.cpp(123,1): warning C4002: 함수 같은 매크로 호출 'CreateWindowW'에 대해 인수가 너무 많습니다.
-  (소스 파일 '/Client.cpp'을(를) 컴파일하는 중)
+﻿  DynamiteMoleAI.cpp
+  TitleScene.cpp
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\Button\UIButton.h(16,7): error C3668: 'UIButton::Update': 재정의 지정자 'override'가 있는 메서드가 기본 클래스 메서드를 재정의하지 않았습니다.
+  (소스 파일 '/Source/Scene/TitleScene.cpp'을(를) 컴파일하는 중)
   
-  MainManager.cpp
-  PrototypeFactory.cpp
-  PrototypeManager.cpp
-  ResourceManager.cpp
-  SceneManager.cpp
-  SoundManager.cpp
-  TimeManager.cpp
-  UIManager.cpp
-  Animation.cpp
-C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\Component\Animation\Animation.cpp(92,65): warning C4267: '=': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  (소스 파일 '/Engine/Object/Component/Animation/Animation.cpp'을(를) 컴파일하는 중)
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\Button\UIButton.h(17,10): error C3668: 'UIButton::Render': 재정의 지정자 'override'가 있는 메서드가 기본 클래스 메서드를 재정의하지 않았습니다.
+  (소스 파일 '/Source/Scene/TitleScene.cpp'을(를) 컴파일하는 중)
   
-  Camera.cpp
-  BoxCollider.cpp
-  CircleCollider.cpp
-  Collider.cpp
-  Component.cpp
-  SpriteRenderer.cpp
-C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\Component\SpriteRenderer\SpriteRenderer.cpp(175,34): warning C4244: '인수': 'double'에서 'Gdiplus::REAL'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  (소스 파일 '/Engine/Object/Component/SpriteRenderer/SpriteRenderer.cpp'을(를) 컴파일하는 중)
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\Button\UIButton.h(61,10): error C3668: 'UIButton::OnHover': 재정의 지정자 'override'가 있는 메서드가 기본 클래스 메서드를 재정의하지 않았습니다.
+  (소스 파일 '/Source/Scene/TitleScene.cpp'을(를) 컴파일하는 중)
   
-  IPrototypeable.cpp
-  Object.cpp
-  코드를 생성하고 있습니다...
-C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Client.cpp(84,1): warning C4715: 'wWinMain': 모든 제어 경로에서 값을 반환하지는 않습니다.
-  컴파일하고 있습니다...
-  UIButton.cpp
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\Button\UIButton.h(62,10): error C3668: 'UIButton::OnPress': 재정의 지정자 'override'가 있는 메서드가 기본 클래스 메서드를 재정의하지 않았습니다.
+  (소스 파일 '/Source/Scene/TitleScene.cpp'을(를) 컴파일하는 중)
+  
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\Button\UIButton.h(63,10): error C3668: 'UIButton::OnRelease': 재정의 지정자 'override'가 있는 메서드가 기본 클래스 메서드를 재정의하지 않았습니다.
+  (소스 파일 '/Source/Scene/TitleScene.cpp'을(를) 컴파일하는 중)
+  
   UI.cpp
-  Scene.cpp
-C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Scene\Scene.cpp(118,25): error C2039: 'GetName': 'UI'의 멤버가 아닙니다.
-  (소스 파일 '/Engine/Scene/Scene.cpp'을(를) 컴파일하는 중)
-      C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\UI.h(7,7):
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\UI.cpp(145,10): error C2084: 'void UI::SetActive(bool)' 함수에 이미 본문이 있습니다.
+  (소스 파일 '/Engine/Object/UI/UI.cpp'을(를) 컴파일하는 중)
+      C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\UI.h(28,10):
+      'UI::SetActive'의 이전 정의를 참조하십시오.
+  
+  UIManager.cpp
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Managers\UIManager\UIManager.cpp(97,27): error C2039: 'OnMouseMove': 'UI'의 멤버가 아닙니다.
+  (소스 파일 '/Engine/Managers/UIManager/UIManager.cpp'을(를) 컴파일하는 중)
+      C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\UI.h(6,7):
       'UI' 선언을 참조하십시오.
   
-  DuelistMoleAI.cpp
-  DynamiteMoleAI.cpp
-  MoleGuardAI.cpp
-  PlayerMovement.cpp
-  PlayerWeapon.cpp
-C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Source\Class\Player\PlayerWeapon.cpp(74,26): warning C4244: '초기화 중': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  (소스 파일 '/Source/Class/Player/PlayerWeapon.cpp'을(를) 컴파일하는 중)
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Managers\UIManager\UIManager.cpp(111,20): error C2039: 'OnMouseDown': 'UI'의 멤버가 아닙니다.
+  (소스 파일 '/Engine/Managers/UIManager/UIManager.cpp'을(를) 컴파일하는 중)
+      C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\UI.h(6,7):
+      'UI' 선언을 참조하십시오.
   
-C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Source\Class\Player\PlayerWeapon.cpp(82,29): warning C4244: '초기화 중': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  (소스 파일 '/Source/Class/Player/PlayerWeapon.cpp'을(를) 컴파일하는 중)
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Managers\UIManager\UIManager.cpp(124,27): error C2039: 'OnMouseUp': 'UI'의 멤버가 아닙니다.
+  (소스 파일 '/Engine/Managers/UIManager/UIManager.cpp'을(를) 컴파일하는 중)
+      C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\UI.h(6,7):
+      'UI' 선언을 참조하십시오.
   
-  GameScene.cpp
-  TitleScene.cpp
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Managers\UIManager\UIManager.cpp(133,9): error C2039: 'SetScreenSize': 'UI'의 멤버가 아닙니다.
+  (소스 파일 '/Engine/Managers/UIManager/UIManager.cpp'을(를) 컴파일하는 중)
+      C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\UI.h(6,7):
+      'UI' 선언을 참조하십시오.
+  
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Managers\UIManager\UIManager.cpp(184,25): error C2039: 'GetZOrder': 'UI'의 멤버가 아닙니다.
+  (소스 파일 '/Engine/Managers/UIManager/UIManager.cpp'을(를) 컴파일하는 중)
+      C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\UI.h(6,7):
+      'UI' 선언을 참조하십시오.
+  
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Managers\UIManager\UIManager.cpp(189,9): error C2039: 'SetZOrder': 'UI'의 멤버가 아닙니다.
+  (소스 파일 '/Engine/Managers/UIManager/UIManager.cpp'을(를) 컴파일하는 중)
+      C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\UI.h(6,7):
+      'UI' 선언을 참조하십시오.
+  
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Managers\UIManager\UIManager.cpp(204,25): error C2039: 'GetZOrder': 'UI'의 멤버가 아닙니다.
+  (소스 파일 '/Engine/Managers/UIManager/UIManager.cpp'을(를) 컴파일하는 중)
+      C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\UI.h(6,7):
+      'UI' 선언을 참조하십시오.
+  
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Managers\UIManager\UIManager.cpp(209,9): error C2039: 'SetZOrder': 'UI'의 멤버가 아닙니다.
+  (소스 파일 '/Engine/Managers/UIManager/UIManager.cpp'을(를) 컴파일하는 중)
+      C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\UI.h(6,7):
+      'UI' 선언을 참조하십시오.
+  
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Managers\UIManager\UIManager.cpp(218,49): error C2039: 'IsEnabled': 'UI'의 멤버가 아닙니다.
+  (소스 파일 '/Engine/Managers/UIManager/UIManager.cpp'을(를) 컴파일하는 중)
+      C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\UI.h(6,7):
+      'UI' 선언을 참조하십시오.
+  
+C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Managers\UIManager\UIManager.cpp(218,71): error C2039: 'IsPointInside': 'UI'의 멤버가 아닙니다.
+  (소스 파일 '/Engine/Managers/UIManager/UIManager.cpp'을(를) 컴파일하는 중)
+      C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\UI\UI.h(6,7):
+      'UI' 선언을 참조하십시오.
+  
   코드를 생성하고 있습니다...

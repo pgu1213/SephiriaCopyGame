@@ -1,131 +1,104 @@
 #pragma once
 #include <Engine/Object/IPrototypeable/IPrototypeable.h>
 
-// UI 이벤트 콜백 함수 타입
-using UIEventCallback = function<void()>;
+class Component;
 
 class UI : public IPrototypeable
 {
 public:
-    UI();
+    UI() : m_Name("Empty"), m_Tag(""), m_bisActive(true), m_pParent(nullptr) {}
+    explicit UI(const string& name) : m_Name(name), m_Tag(""), m_bisActive(true), m_pParent(nullptr) {}
     UI(const UI& other);
-    virtual ~UI();
-
 public:
-    // IPrototypeable 인터페이스
-    unique_ptr<IPrototypeable> Clone() const override;
-    void CopyFrom(const IPrototypeable* source) override;
-
-public:
-    // 업데이트 및 렌더링
-    virtual void Update(float deltaTime);
-    virtual void Render(HDC hdc);
-
-    // 마우스 이벤트 처리
-    virtual bool OnMouseMove(int x, int y);
-    virtual bool OnMouseDown(int x, int y);
-    virtual bool OnMouseUp(int x, int y);
-
-    // 위치 및 크기 설정
-    void SetPosition(float x, float y);
-    void SetPosition(const Vector2& position);
-    Vector2 GetPosition() const;
-
-    void SetSize(float width, float height);
-    void SetSize(const Vector2& size);
-    Vector2 GetSize() const;
-
-    void SetRect(float x, float y, float width, float height);
-    void SetRect(const Vector2& position, const Vector2& size);
-
-    // 앵커 설정
-    void SetAnchor(UIAnchor anchor);
-    UIAnchor GetAnchor() const;
-
-    // 앵커 오프셋 설정 (앵커 지점에서의 상대적 위치)
-    void SetAnchorOffset(float x, float y);
-    void SetAnchorOffset(const Vector2& offset);
-    Vector2 GetAnchorOffset() const;
-
-    // 화면 크기에 따른 실제 위치 계산
-    Vector2 GetScreenPosition() const;
-    Vector2 GetActualSize() const;
-
-    // 가시성
-    void SetVisible(bool visible);
-    bool IsVisible() const;
+    void Update(float DeltaTime);
+    void LateUpdate(float DeltaTime);
+    void Render(HDC hdc);
+public: // Get / Set
+    string GetName() const { return m_Name; }
+    Transform GetTransform() const { return m_Transform; }
+    void SetTransform(const Transform& transform) { m_Transform = transform; }
+    void SetPosition(const Vector2& position) { m_Transform.position = position; }
+    void SetPosition(float x, float y) { m_Transform.position = Vector2(x, y); }
+    void SetRotation(float rotation) { m_Transform.rotation = rotation; }
+    void SetScale(float x, float y) { m_Transform.scale = Vector2(x, y); }
+    void SetScale(const Vector2& scale) { m_Transform.scale = scale; }
 
     // 활성화 상태
-    void SetEnabled(bool enabled);
-    bool IsEnabled() const;
+    bool IsActive() const { return m_bisActive; }
+    void SetActive(bool active) { m_bisActive = active; }
 
-    // 투명도
-    void SetAlpha(float alpha);
-    float GetAlpha() const;
+    bool IsVisible() const { return m_bisVisible; }
+    void SetVisible(bool visible) { m_bisVisible = visible; }
+public:
+    unique_ptr<IPrototypeable> Clone() const override; // 프로토타입 패턴 구현
+    void CopyFrom(const IPrototypeable* source) override;
+    UI& operator=(const UI& other); // 복사 할당 연산자
+private:
+    void CloneComponents(const UI& other);
+    void CloneChildren(const UI& other);
+private:
+    string m_Name;
+    string m_Tag;
+    bool m_bisActive;
+    bool m_bisVisible;
+    bool m_bisStarted = false;
+    Transform m_Transform;
+    UI* m_pParent;
+    vector<UI*> m_Children;
+    vector<unique_ptr<Component>> m_Components;
+    unordered_map<type_index, Component*> m_ComponentMap;
 
-    // 색상
-    void SetColor(COLORREF color);
-    COLORREF GetColor() const;
+public:
+    template<typename T, typename... Args>
+    T* AddComponent(Args&&... args)
+    {
+        static_assert(is_base_of_v<Component, T>, "T는 Component로부터 상속받아야 합니다.");
 
-    // 계층 순서 (높을수록 위에 그려짐)
-    void SetZOrder(int zOrder);
-    int GetZOrder() const;
+        // 이미 존재하는 컴포넌트인지 확인
+        if (HasComponent<T>())
+            return GetComponent<T>();
 
-    // 마우스 충돌 검사
-    bool IsPointInside(int x, int y) const;
+        auto newComponent = make_unique<T>(this, forward<Args>(args)...);
+        T* ptr = newComponent.get();
 
-    // 이벤트 콜백 설정
-    void SetClickCallback(UIEventCallback callback);
-    void SetHoverCallback(UIEventCallback callback);
+        m_Components.push_back(move(newComponent));
+        m_ComponentMap[type_index(typeid(T))] = ptr;
 
-    // 자식 UI 관리
-    void AddChild(shared_ptr<UI> child);
-    void RemoveChild(shared_ptr<UI> child);
-    void ClearChildren();
-    const vector<shared_ptr<UI>>& GetChildren() const;
+        ptr->Init();
+        return ptr;
+    }
 
-    // 부모 UI
-    void SetParent(UI* parent);
-    UI* GetParent() const;
+    template<typename T>
+    T* GetComponent()
+    {
+        auto it = m_ComponentMap.find(type_index(typeid(T)));
+        return (it != m_ComponentMap.end()) ? static_cast<T*>(it->second) : nullptr;
+    }
 
-    // UI 매니저에서 사용하는 정적 함수들
-    static void SetScreenSize(float width, float height);
-    static Vector2 GetGlobalScreenSize();
+    template<typename T>
+    bool HasComponent()
+    {
+        return m_ComponentMap.find(type_index(typeid(T))) != m_ComponentMap.end();
+    }
 
-protected:
-    // 앵커 기준 위치 계산
-    Vector2 CalculateAnchorPosition() const;
+    template<typename T>
+    void RemoveComponent()
+    {
+        auto it = m_ComponentMap.find(type_index(typeid(T)));
+        if (it != m_ComponentMap.end())
+        {
+            Component* comp = it->second;
+            comp->OnDestroy();
 
-    // 상속받은 클래스에서 오버라이드할 가상 함수들
-    virtual void OnClick();
-    virtual void OnHover();
-    virtual void OnPress();
-    virtual void OnRelease();
+            m_Components.erase(
+                remove_if(m_Components.begin(), m_Components.end(),
+                    [comp](const unique_ptr<Component>& ptr) {
+                        return ptr.get() == comp;
+                    }),
+                m_Components.end()
+            );
 
-protected:
-    Vector2 m_Position;         // UI 위치
-    Vector2 m_Size;             // UI 크기
-    Vector2 m_AnchorOffset;     // 앵커 오프셋
-    UIAnchor m_Anchor;          // 앵커 타입
-
-    bool m_Visible;             // 가시성
-    bool m_Enabled;             // 활성화 상태
-    float m_Alpha;              // 투명도 (0.0f ~ 1.0f)
-    COLORREF m_Color;           // 색상
-    int m_ZOrder;               // 계층 순서
-
-    // 마우스 상태
-    bool m_IsHovered;           // 마우스 호버 상태
-    bool m_IsPressed;           // 마우스 눌림 상태
-
-    // 이벤트 콜백
-    UIEventCallback m_ClickCallback;
-    UIEventCallback m_HoverCallback;
-
-    // 계층 구조
-    UI* m_Parent;
-    vector<shared_ptr<UI>> m_Children;
-
-    // 정적 멤버
-    static Vector2 s_ScreenSize;
+            m_ComponentMap.erase(it);
+        }
+    }
 };

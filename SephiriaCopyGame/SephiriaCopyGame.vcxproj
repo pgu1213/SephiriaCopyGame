@@ -167,7 +167,6 @@
     <ClInclude Include="Engine\Managers\TimeManager\TimeManager.h" />
     <ClInclude Include="Source\Scene\TitleScene.h" />
     <ClInclude Include="Engine\Object\UI\UI.h" />
-    <ClInclude Include="Engine\Object\UI\Button\UIButton.h" />
     <ClInclude Include="Engine\Managers\UIManager\UIManager.h" />
   </ItemGroup>
   <ItemGroup>
@@ -205,7 +204,6 @@
     <ClCompile Include="Engine\Scene\Scene.cpp" />
     <ClCompile Include="Source\Scene\TitleScene.cpp" />
     <ClCompile Include="Engine\Object\UI\UI.cpp" />
-    <ClCompile Include="Engine\Object\UI\Button\UIButton.cpp" />
     <ClCompile Include="Engine\Managers\UIManager\UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>

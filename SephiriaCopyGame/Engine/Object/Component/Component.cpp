@@ -5,6 +5,10 @@ Component::Component(Object* owner) : m_pOwner(owner), m_bisEnabled(true)
 {
 }
 
+Component::Component(UI* owner) : m_pUIOwner(owner), m_bisEnabled(true)
+{
+}
+
 // 프로토타입 클론
 unique_ptr<IPrototypeable> Component::Clone() const
 {
@@ -22,6 +26,7 @@ void Component::CopyFrom(const IPrototypeable* source)
 }
 
 void Component::SetOwner(Object* newOwner) { m_pOwner = newOwner; }
+void Component::SetOwner(UI* newOwner) { m_pUIOwner = newOwner; }
 
 void Component::Init()
 {

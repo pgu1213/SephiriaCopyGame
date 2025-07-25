@@ -15,6 +15,7 @@ public:
     void Update(float DeltaTime);
     void LateUpdate(float DeltaTime);
     void Render(HDC hdc);
+public:
     Transform GetTransform() const { return m_Transform; }
     string GetName() const { return m_Name; }
     void SetTransform(const Transform& transform) { m_Transform = transform; }

@@ -1,13 +1,16 @@
 #pragma once
 #include <Engine/Object/IPrototypeable/IPrototypeable.h>
 #include <Engine/Object/Object/Object.h>
+#include <Engine/Object/UI/UI.h>
 
 class Object;
+class UI;
 
 class Component : public IPrototypeable
 {
 public:
     Component(Object* owner);
+    Component(UI* owner);
     virtual ~Component() = default; 
 public:
     virtual Component* CloneImpl() const = 0;
@@ -22,9 +25,11 @@ public:
     unique_ptr<IPrototypeable> Clone() const override;
     void CopyFrom(const IPrototypeable* source) override;
     void SetOwner(Object* newOwner);
+	void SetOwner(UI* newOwner);
     bool IsEnabled() const { return m_bisEnabled; }
     Object* GetOwner() const { return m_pOwner; }
 protected:
     Object* m_pOwner;
+	UI* m_pUIOwner;
     bool m_bisEnabled;
 };
