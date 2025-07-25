@@ -226,23 +226,28 @@ void MainEditor::RenderUI(HDC hdc)
     wstring gridInfo = L"Grid: 16px (Fixed)";
     TextOut(hdc, 10, 90, gridInfo.c_str(), gridInfo.length());
 
-    // 컨트롤 가이드 (방 타입 관련 추가)
-    TextOut(hdc, 10, m_ScreenHeight - 180, L"Controls:", 9);
-    TextOut(hdc, 10, m_ScreenHeight - 160, L"Arrow Keys: Move Camera", 23);
-    TextOut(hdc, 10, m_ScreenHeight - 140, L"Page Up/Down: Zoom", 18);
-    TextOut(hdc, 10, m_ScreenHeight - 120, L"S: Save, L: Load, T: Toggle Mode", 32);
-    TextOut(hdc, 10, m_ScreenHeight - 100, L"G: Grid, B: Bounds, R: Room Size", 32);
-    TextOut(hdc, 10, m_ScreenHeight - 80, L"Y: Change Room Type", 19);
-    TextOut(hdc, 10, m_ScreenHeight - 60, L"Ctrl+1~4: Quick Room Type", 25);
-    TextOut(hdc, 10, m_ScreenHeight - 40, L"N: New Map", 10);
+    // 컨트롤 가이드 (레이어 관련 추가)
+    TextOut(hdc, 10, m_ScreenHeight - 200, L"Controls:", 9);
+    TextOut(hdc, 10, m_ScreenHeight - 180, L"Arrow Keys: Move Camera", 23);
+    TextOut(hdc, 10, m_ScreenHeight - 160, L"Page Up/Down: Zoom", 18);
+    TextOut(hdc, 10, m_ScreenHeight - 140, L"1~4: Switch Layer", 17);
+    TextOut(hdc, 10, m_ScreenHeight - 120, L"Alt+1~4: Toggle Layer Visibility", 32);
+    TextOut(hdc, 10, m_ScreenHeight - 100, L"S: Save, L: Load, T: Toggle Mode", 32);
+    TextOut(hdc, 10, m_ScreenHeight - 80, L"G: Grid, B: Bounds, R: Room Size", 32);
+    TextOut(hdc, 10, m_ScreenHeight - 60, L"Y: Room Type, N: New Map", 24);
 }
 
 void MainEditor::SaveCurrentMap()
 {
     if (m_pTileMapEditor)
     {
+        cout << "\n=== 맵 저장 시작 ===" << endl;
         m_pTileMapEditor->SaveMap();
-        cout << "맵을 저장했습니다." << endl;
+        cout << "=== 맵 저장 완료 ===" << endl;
+    }
+    else
+    {
+        cout << "타일맵 에디터가 초기화되지 않았습니다." << endl;
     }
 }
 

@@ -1,17 +1,5 @@
 #pragma once
 
-struct TileData
-{
-    wstring tileName;
-    int x, y;
-    bool isEmpty;
-
-    TileData() : tileName(L""), x(0), y(0), isEmpty(true) {}
-    TileData(const wstring& name, int posX, int posY)
-        : tileName(name), x(posX), y(posY), isEmpty(false) {
-    }
-};
-
 class TileMapEditor
 {
 public:
@@ -40,20 +28,33 @@ public:
     void SetRoomType(RoomType type);
     RoomType GetRoomType() const { return m_RoomType; }
     wstring GetRoomTypeName() const;
-    void RenderRoomInfo(HDC hdc);
     int GetRoomTypeID() const { return (int)m_RoomType; }
+
+    // 레이어 관련 함수
+    void SetCurrentLayer(LayerType layer);
+    LayerType GetCurrentLayer() const { return m_CurrentLayer; }
+    wstring GetLayerName() const;
+    void ToggleLayerVisibility(LayerType layer);
+    bool IsLayerVisible(LayerType layer) const;
 
 private:
     void HandleInput();
     void PlaceTile();
+    void PlaceColorBox();
     void RemoveTile();
+    void RemoveColorBox();
     void RenderGrid(HDC hdc);
+    void RenderAllLayers(HDC hdc);
+    void RenderTileLayer(HDC hdc, const map<pair<int, int>, TileData>& layer);
+    void RenderColorLayer(HDC hdc, const map<pair<int, int>, bool>& layer, COLORREF color);
     void RenderTiles(HDC hdc);
     void RenderCulledTiles(HDC hdc);
     void RenderRoomBounds(HDC hdc); // 방 경계 표시
+    void RenderRoomInfo(HDC hdc);
+    void RenderLayerInfo(HDC hdc);
 
-    void SaveMapWithTileNames(const wstring& filename);
-    void LoadMapWithTileNames(const wstring& filename);
+    void SaveMapWithLayers(const wstring& filename);
+    void LoadMapWithLayers(const wstring& filename);
     wstring GenerateMapFileName();
 
 private:
@@ -75,6 +76,13 @@ private:
 
     // 방 타입 시스템
     RoomType m_RoomType;
+
+	// 레이어 데이터
+    LayerData m_LayerData;
+
+    // 레이어 시스템
+    LayerType m_CurrentLayer;
+    map<LayerType, bool> m_LayerVisibility; // 레이어별 표시/숨김
 
     // 마우스 상태
     bool m_LeftMousePressed;

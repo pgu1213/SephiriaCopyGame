@@ -1,4 +1,4 @@
-#include "../../pch.h"
+Ôªø#include "../../pch.h"
 #include "TileMapEditor.h"
 #include "../Camera/Camera.h"
 #include "../TilePalette/TilePalette.h"
@@ -16,11 +16,17 @@ TileMapEditor::TileMapEditor()
     , m_RoomWidth(DEFAULT_ROOM_WIDTH)
     , m_RoomHeight(DEFAULT_ROOM_HEIGHT)
     , m_ShowRoomBounds(true)
-    , m_RoomType(RoomType::ENTRANCE) // ±‚∫ª∞™¿∫ ¿‘±∏πÊ
+    , m_RoomType(RoomType::ENTRANCE)
+    , m_CurrentLayer(LayerType::GROUND)
     , m_LeftMousePressed(false)
     , m_RightMousePressed(false)
 {
     m_LastMousePos = { 0, 0 };
+
+    m_LayerVisibility[LayerType::GROUND] = true;
+    m_LayerVisibility[LayerType::DECORATION] = true;
+    m_LayerVisibility[LayerType::CLIFF] = true;
+    m_LayerVisibility[LayerType::COLLIDER] = true;
 }
 
 TileMapEditor::~TileMapEditor()
@@ -31,8 +37,8 @@ TileMapEditor::~TileMapEditor()
 void TileMapEditor::Initialize(Camera* camera)
 {
     m_pCamera = camera;
-    cout << "≈∏¿œ∏  ø°µ≈Õ √ ±‚»≠ øœ∑· (±◊∏ÆµÂ: " << GRID_SIZE << "px ∞Ì¡§)" << endl;
-    cout << "πÊ ≈©±‚: " << m_RoomWidth << " x " << m_RoomHeight << " ±◊∏ÆµÂ" << endl;
+    cout << "ÌÉÄÏùºÎßµ ÏóêÎîîÌÑ∞ Ï¥àÍ∏∞Ìôî ÏôÑÎ£å (Í∑∏Î¶¨Îìú: " << GRID_SIZE << "px Í≥†Ï†ï)" << endl;
+    cout << "Î∞© ÌÅ¨Í∏∞: " << m_RoomWidth << " x " << m_RoomHeight << " Í∑∏Î¶¨Îìú" << endl;
 }
 
 void TileMapEditor::Update()
@@ -46,6 +52,7 @@ void TileMapEditor::HandleInput()
 
     POINT currentMousePos = inputMgr->GetMousePosition();
 
+    // ÎßàÏö∞Ïä§ ÏûÖÎ†• Ï≤òÎ¶¨
     if (inputMgr->IsKeyDown(VK_LBUTTON))
     {
         PlaceTile();
@@ -84,18 +91,54 @@ void TileMapEditor::HandleInput()
 
     m_LastMousePos = currentMousePos;
 
-    // ±◊∏ÆµÂ ≈‰±€
+    // Í∏∞Ï°¥ ÌÇ§Îì§
     if (inputMgr->IsKeyDown('G'))
     {
         m_ShowGrid = !m_ShowGrid;
-        cout << "±◊∏ÆµÂ " << (m_ShowGrid ? "«•Ω√" : "º˚±Ë") << endl;
     }
 
-    // πÊ ∞Ê∞Ë ≈‰±€
     if (inputMgr->IsKeyDown('B'))
     {
         m_ShowRoomBounds = !m_ShowRoomBounds;
-        cout << "πÊ ∞Ê∞Ë " << (m_ShowRoomBounds ? "«•Ω√" : "º˚±Ë") << endl;
+    }
+
+    // Î†àÏù¥Ïñ¥ Ï†ÑÌôò (1~4 Ïà´ÏûêÌÇ§)
+    if (inputMgr->IsKeyDown('1'))
+    {
+        SetCurrentLayer(LayerType::GROUND);
+    }
+    if (inputMgr->IsKeyDown('2'))
+    {
+        SetCurrentLayer(LayerType::DECORATION);
+    }
+    if (inputMgr->IsKeyDown('3'))
+    {
+        SetCurrentLayer(LayerType::CLIFF);
+    }
+    if (inputMgr->IsKeyDown('4'))
+    {
+        SetCurrentLayer(LayerType::COLLIDER);
+    }
+
+    // Î†àÏù¥Ïñ¥ Í∞ÄÏãúÏÑ± ÌÜ†Í∏Ä (Alt + 1~4)
+    if (inputMgr->IsKeyPressed(VK_MENU)) // Alt ÌÇ§
+    {
+        if (inputMgr->IsKeyDown('1'))
+        {
+            ToggleLayerVisibility(LayerType::GROUND);
+        }
+        if (inputMgr->IsKeyDown('2'))
+        {
+            ToggleLayerVisibility(LayerType::DECORATION);
+        }
+        if (inputMgr->IsKeyDown('3'))
+        {
+            ToggleLayerVisibility(LayerType::CLIFF);
+        }
+        if (inputMgr->IsKeyDown('4'))
+        {
+            ToggleLayerVisibility(LayerType::COLLIDER);
+        }
     }
 }
 
@@ -103,47 +146,114 @@ void TileMapEditor::PlaceTile()
 {
     if (!m_pTilePalette) return;
 
-    wstring selectedTile = m_pTilePalette->GetSelectedTile();
-    if (selectedTile.empty()) return;
-
     POINT mousePos = InputManager::GetInstance()->GetMousePosition();
-
     float worldX, worldY;
     m_pCamera->ScreenToWorld(mousePos.x, mousePos.y, worldX, worldY);
 
-    // ±◊∏ÆµÂø° ∏¬√Á ¡§∑ƒ
     int gridX = (int)(worldX / GRID_SIZE);
     int gridY = (int)(worldY / GRID_SIZE);
 
-    // πÊ ∞Ê∞Ë √º≈©
-    if (!IsWithinRoomBounds(gridX, gridY))
-    {
-        return; // πÊ ∞Ê∞Ë∏¶ π˛æÓ≥™∏È πËƒ°«œ¡ˆ æ ¿Ω
-    }
+    if (!IsWithinRoomBounds(gridX, gridY)) return;
 
-    // ≈∏¿œ πËƒ°
     pair<int, int> gridPos = make_pair(gridX, gridY);
-    m_TileMap[gridPos] = TileData(selectedTile, gridX * GRID_SIZE, gridY * GRID_SIZE);
+
+    // ÌòÑÏû¨ Î†àÏù¥Ïñ¥Ïóê Îî∞Îùº Îã§Î•∏ Ï≤òÎ¶¨
+    if (m_CurrentLayer == LayerType::GROUND || m_CurrentLayer == LayerType::DECORATION)
+    {
+        // ÌÉÄÏùº Î†àÏù¥Ïñ¥ - ÏÑ†ÌÉùÎêú ÌÉÄÏùº Î∞∞Ïπò
+        wstring selectedTile = m_pTilePalette->GetSelectedTile();
+        if (selectedTile.empty()) return;
+
+        TileData newTile(selectedTile, gridX * GRID_SIZE, gridY * GRID_SIZE, m_CurrentLayer);
+
+        if (m_CurrentLayer == LayerType::GROUND)
+        {
+            m_LayerData.groundLayer[gridPos] = newTile;
+        }
+        else if (m_CurrentLayer == LayerType::DECORATION)
+        {
+            m_LayerData.decorationLayer[gridPos] = newTile;
+        }
+    }
+    else
+    {
+        // ÏÉâÏÉÅ Î∞ïÏä§ Î†àÏù¥Ïñ¥ - ÏÉâÏÉÅ Î∞ïÏä§ Î∞∞Ïπò
+        PlaceColorBox();
+    }
+}
+
+void TileMapEditor::PlaceColorBox()
+{
+    POINT mousePos = InputManager::GetInstance()->GetMousePosition();
+    float worldX, worldY;
+    m_pCamera->ScreenToWorld(mousePos.x, mousePos.y, worldX, worldY);
+
+    int gridX = (int)(worldX / GRID_SIZE);
+    int gridY = (int)(worldY / GRID_SIZE);
+
+    if (!IsWithinRoomBounds(gridX, gridY)) return;
+
+    pair<int, int> gridPos = make_pair(gridX, gridY);
+
+    if (m_CurrentLayer == LayerType::CLIFF)
+    {
+        m_LayerData.cliffLayer[gridPos] = true;
+    }
+    else if (m_CurrentLayer == LayerType::COLLIDER)
+    {
+        m_LayerData.colliderLayer[gridPos] = true;
+    }
 }
 
 void TileMapEditor::RemoveTile()
 {
     POINT mousePos = InputManager::GetInstance()->GetMousePosition();
-
     float worldX, worldY;
     m_pCamera->ScreenToWorld(mousePos.x, mousePos.y, worldX, worldY);
 
     int gridX = (int)(worldX / GRID_SIZE);
     int gridY = (int)(worldY / GRID_SIZE);
 
-    // πÊ ∞Ê∞Ë √º≈©
-    if (!IsWithinRoomBounds(gridX, gridY))
-    {
-        return;
-    }
+    if (!IsWithinRoomBounds(gridX, gridY)) return;
 
     pair<int, int> gridPos = make_pair(gridX, gridY);
-    m_TileMap.erase(gridPos);
+
+    // ÌòÑÏû¨ Î†àÏù¥Ïñ¥Ïóê Îî∞Îùº Îã§Î•∏ Ï≤òÎ¶¨
+    if (m_CurrentLayer == LayerType::GROUND)
+    {
+        m_LayerData.groundLayer.erase(gridPos);
+    }
+    else if (m_CurrentLayer == LayerType::DECORATION)
+    {
+        m_LayerData.decorationLayer.erase(gridPos);
+    }
+    else
+    {
+        RemoveColorBox();
+    }
+}
+
+void TileMapEditor::RemoveColorBox()
+{
+    POINT mousePos = InputManager::GetInstance()->GetMousePosition();
+    float worldX, worldY;
+    m_pCamera->ScreenToWorld(mousePos.x, mousePos.y, worldX, worldY);
+
+    int gridX = (int)(worldX / GRID_SIZE);
+    int gridY = (int)(worldY / GRID_SIZE);
+
+    if (!IsWithinRoomBounds(gridX, gridY)) return;
+
+    pair<int, int> gridPos = make_pair(gridX, gridY);
+
+    if (m_CurrentLayer == LayerType::CLIFF)
+    {
+        m_LayerData.cliffLayer.erase(gridPos);
+    }
+    else if (m_CurrentLayer == LayerType::COLLIDER)
+    {
+        m_LayerData.colliderLayer.erase(gridPos);
+    }
 }
 
 void TileMapEditor::Render(HDC hdc)
@@ -158,17 +268,12 @@ void TileMapEditor::Render(HDC hdc)
         RenderRoomBounds(hdc);
     }
 
-    if (m_EnableCulling)
-    {
-        RenderCulledTiles(hdc);
-    }
-    else
-    {
-        RenderTiles(hdc);
-    }
+    // Î™®Îì† Î†àÏù¥Ïñ¥ Î†åÎçîÎßÅ
+    RenderAllLayers(hdc);
 
-    // πÊ ¡§∫∏ ∑ª¥ı∏µ
+    // UI Ï†ïÎ≥¥ Î†åÎçîÎßÅ
     RenderRoomInfo(hdc);
+    RenderLayerInfo(hdc);
 }
 
 void TileMapEditor::RenderGrid(HDC hdc)
@@ -176,13 +281,13 @@ void TileMapEditor::RenderGrid(HDC hdc)
     HPEN gridPen = CreatePen(PS_SOLID, 1, RGB(64, 64, 64));
     HPEN oldPen = (HPEN)SelectObject(hdc, gridPen);
 
-    // πÊ ∞Ê∞Ë ≥ªø°º≠∏∏ ±◊∏ÆµÂ ∞ËªÍ
+    // Î∞© Í≤ΩÍ≥Ñ ÎÇ¥ÏóêÏÑúÎßå Í∑∏Î¶¨Îìú Í≥ÑÏÇ∞
     float worldLeft = 0;
     float worldTop = 0;
     float worldRight = m_RoomWidth * GRID_SIZE;
     float worldBottom = m_RoomHeight * GRID_SIZE;
 
-    // ºˆ¡˜º± (πÊ ∞Ê∞Ë ≥ªø°º≠∏∏)
+    // ÏàòÏßÅÏÑ† (Î∞© Í≤ΩÍ≥Ñ ÎÇ¥ÏóêÏÑúÎßå)
     for (int x = 0; x <= m_RoomWidth; x++)
     {
         float worldX = x * GRID_SIZE;
@@ -192,7 +297,7 @@ void TileMapEditor::RenderGrid(HDC hdc)
         LineTo(hdc, end.x, end.y);
     }
 
-    // ºˆ∆Úº± (πÊ ∞Ê∞Ë ≥ªø°º≠∏∏)
+    // ÏàòÌèâÏÑ† (Î∞© Í≤ΩÍ≥Ñ ÎÇ¥ÏóêÏÑúÎßå)
     for (int y = 0; y <= m_RoomHeight; y++)
     {
         float worldY = y * GRID_SIZE;
@@ -206,11 +311,98 @@ void TileMapEditor::RenderGrid(HDC hdc)
     DeleteObject(gridPen);
 }
 
+void TileMapEditor::RenderAllLayers(HDC hdc)
+{
+    // Î†àÏù¥Ïñ¥ ÏàúÏÑú: Í∑∏ÎùºÏö¥Îìú ‚Üí Ïû•Ïãù ‚Üí ÎÇ≠Îñ†Îü¨ÏßÄ ‚Üí ÏΩúÎùºÏù¥Îçî
+
+    // 1. Í∑∏ÎùºÏö¥Îìú Î†àÏù¥Ïñ¥
+    if (IsLayerVisible(LayerType::GROUND))
+    {
+        RenderTileLayer(hdc, m_LayerData.groundLayer);
+    }
+
+    // 2. Ïû•Ïãù Î†àÏù¥Ïñ¥
+    if (IsLayerVisible(LayerType::DECORATION))
+    {
+        RenderTileLayer(hdc, m_LayerData.decorationLayer);
+    }
+
+    // 3. ÎÇ≠Îñ†Îü¨ÏßÄ Î†àÏù¥Ïñ¥ (Îπ®Í∞ÑÏÉâ)
+    if (IsLayerVisible(LayerType::CLIFF))
+    {
+        RenderColorLayer(hdc, m_LayerData.cliffLayer, RGB(255, 0, 0));
+    }
+
+    // 4. ÏΩúÎùºÏù¥Îçî Î†àÏù¥Ïñ¥ (Ï¥àÎ°ùÏÉâ)
+    if (IsLayerVisible(LayerType::COLLIDER))
+    {
+        RenderColorLayer(hdc, m_LayerData.colliderLayer, RGB(0, 255, 0));
+    }
+}
+
+void TileMapEditor::RenderTileLayer(HDC hdc, const map<pair<int, int>, TileData>& layer)
+{
+    Graphics graphics(hdc);
+    float zoom = m_pCamera->GetZoom();
+    int scaledGridSize = (int)(GRID_SIZE * zoom);
+
+    for (const auto& tilePair : layer)
+    {
+        const TileData& tile = tilePair.second;
+        if (tile.isEmpty) continue;
+
+        Bitmap* tileSprite = ResourceManager::GetInstance()->GetSprite(tile.tileName);
+        if (!tileSprite) continue;
+
+        POINT screenPos = m_pCamera->WorldToScreen((float)tile.x, (float)tile.y);
+        graphics.DrawImage(tileSprite, screenPos.x, screenPos.y, scaledGridSize, scaledGridSize);
+    }
+}
+
+void TileMapEditor::RenderColorLayer(HDC hdc, const map<pair<int, int>, bool>& layer, COLORREF color)
+{
+    HBRUSH colorBrush = CreateSolidBrush(color);
+    HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, colorBrush);
+
+    float zoom = m_pCamera->GetZoom();
+    int scaledGridSize = (int)(GRID_SIZE * zoom);
+
+    for (const auto& gridPair : layer)
+    {
+        if (!gridPair.second) continue; // falseÏù∏ Í≤ΩÏö∞ Í±¥ÎÑàÎõ∞Í∏∞
+
+        int worldX = gridPair.first.first * GRID_SIZE;
+        int worldY = gridPair.first.second * GRID_SIZE;
+
+        POINT screenPos = m_pCamera->WorldToScreen((float)worldX, (float)worldY);
+
+        // Î∞òÌà¨Î™Ö Ìö®Í≥ºÎ•º ÏúÑÌï¥ ÏÉâÏÉÅ Î∞ïÏä§ Í∑∏Î¶¨Í∏∞
+        RECT boxRect = {
+            screenPos.x,
+            screenPos.y,
+            screenPos.x + scaledGridSize,
+            screenPos.y + scaledGridSize
+        };
+
+        FillRect(hdc, &boxRect, colorBrush);
+
+        // ÌÖåÎëêÎ¶¨ Í∑∏Î¶¨Í∏∞
+        HPEN borderPen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
+        HPEN oldPen = (HPEN)SelectObject(hdc, borderPen);
+        Rectangle(hdc, boxRect.left, boxRect.top, boxRect.right, boxRect.bottom);
+        SelectObject(hdc, oldPen);
+        DeleteObject(borderPen);
+    }
+
+    SelectObject(hdc, oldBrush);
+    DeleteObject(colorBrush);
+}
+
 void TileMapEditor::RenderTiles(HDC hdc)
 {
     Graphics graphics(hdc);
     float zoom = m_pCamera->GetZoom();
-    int scaledGridSize = (int)(GRID_SIZE * zoom); // ¡‹ø° µ˚∏• Ω∫«¡∂Û¿Ã∆Æ ≈©±‚
+    int scaledGridSize = (int)(GRID_SIZE * zoom); // Ï§åÏóê Îî∞Î•∏ Ïä§ÌîÑÎùºÏù¥Ìä∏ ÌÅ¨Í∏∞
 
     for (const auto& tilePair : m_TileMap)
     {
@@ -222,7 +414,7 @@ void TileMapEditor::RenderTiles(HDC hdc)
 
         POINT screenPos = m_pCamera->WorldToScreen((float)tile.x, (float)tile.y);
 
-        // ¡‹ø° µ˚∂Û Ω∫«¡∂Û¿Ã∆Æ ≈©±‚ ¡∂¿˝
+        // Ï§åÏóê Îî∞Îùº Ïä§ÌîÑÎùºÏù¥Ìä∏ ÌÅ¨Í∏∞ Ï°∞Ï†à
         graphics.DrawImage(tileSprite, screenPos.x, screenPos.y, scaledGridSize, scaledGridSize);
     }
 }
@@ -236,7 +428,7 @@ void TileMapEditor::RenderCulledTiles(HDC hdc)
     m_pCamera->ScreenToWorld(0, 0, worldLeft, worldTop);
     m_pCamera->ScreenToWorld(clientRect.right, clientRect.bottom, worldRight, worldBottom);
 
-    // ø©πÈ √ﬂ∞°
+    // Ïó¨Î∞± Ï∂îÍ∞Ä
     int margin = GRID_SIZE * 2;
     worldLeft -= margin;
     worldTop -= margin;
@@ -245,7 +437,7 @@ void TileMapEditor::RenderCulledTiles(HDC hdc)
 
     Graphics graphics(hdc);
     float zoom = m_pCamera->GetZoom();
-    int scaledGridSize = (int)(GRID_SIZE * zoom); // ¡‹ø° µ˚∏• Ω∫«¡∂Û¿Ã∆Æ ≈©±‚
+    int scaledGridSize = (int)(GRID_SIZE * zoom); // Ï§åÏóê Îî∞Î•∏ Ïä§ÌîÑÎùºÏù¥Ìä∏ ÌÅ¨Í∏∞
     int renderedCount = 0;
 
     for (const auto& tilePair : m_TileMap)
@@ -253,7 +445,7 @@ void TileMapEditor::RenderCulledTiles(HDC hdc)
         const TileData& tile = tilePair.second;
         if (tile.isEmpty) continue;
 
-        // ƒ√∏µ ∞ÀªÁ
+        // Ïª¨ÎßÅ Í≤ÄÏÇ¨
         if (tile.x + GRID_SIZE < worldLeft || tile.x > worldRight ||
             tile.y + GRID_SIZE < worldTop || tile.y > worldBottom)
         {
@@ -265,12 +457,12 @@ void TileMapEditor::RenderCulledTiles(HDC hdc)
 
         POINT screenPos = m_pCamera->WorldToScreen((float)tile.x, (float)tile.y);
 
-        // ¡‹ø° µ˚∂Û Ω∫«¡∂Û¿Ã∆Æ ≈©±‚ ¡∂¿˝
+        // Ï§åÏóê Îî∞Îùº Ïä§ÌîÑÎùºÏù¥Ìä∏ ÌÅ¨Í∏∞ Ï°∞Ï†à
         graphics.DrawImage(tileSprite, screenPos.x, screenPos.y, scaledGridSize, scaledGridSize);
         renderedCount++;
     }
 
-    // ∑ª¥ı∏µ ≈Î∞Ë
+    // Î†åÎçîÎßÅ ÌÜµÍ≥Ñ
     SetTextColor(hdc, RGB(255, 255, 0));
     SetBkMode(hdc, TRANSPARENT);
     wstring stats = L"Rendered: " + to_wstring(renderedCount) + L"/" + to_wstring(m_TileMap.size());
@@ -279,33 +471,33 @@ void TileMapEditor::RenderCulledTiles(HDC hdc)
 
 void TileMapEditor::RenderRoomBounds(HDC hdc)
 {
-    // πÊ ≈∏¿‘ø° µ˚∏• ≈◊µŒ∏Æ ªˆªÛ
+    // Î∞© ÌÉÄÏûÖÏóê Îî∞Î•∏ ÌÖåÎëêÎ¶¨ ÏÉâÏÉÅ
     COLORREF boundsColor;
     switch (m_RoomType)
     {
-    case RoomType::ENTRANCE: boundsColor = RGB(0, 255, 0);   break; // √ ∑œªˆ
-    case RoomType::BATTLE:   boundsColor = RGB(255, 255, 0); break; // ≥Î∂ıªˆ
-    case RoomType::EXIT:     boundsColor = RGB(0, 255, 255); break; // √ª∑œªˆ
-    case RoomType::BOSS:     boundsColor = RGB(255, 0, 255); break; // ∏∂¡®≈∏
-    default:                 boundsColor = RGB(255, 0, 0);   break; // ª°∞£ªˆ
+    case RoomType::ENTRANCE: boundsColor = RGB(0, 255, 0);   break; // Ï¥àÎ°ùÏÉâ
+    case RoomType::BATTLE:   boundsColor = RGB(255, 255, 0); break; // ÎÖ∏ÎûÄÏÉâ
+    case RoomType::EXIT:     boundsColor = RGB(0, 255, 255); break; // Ï≤≠Î°ùÏÉâ
+    case RoomType::BOSS:     boundsColor = RGB(255, 0, 255); break; // ÎßàÏ††ÌÉÄ
+    default:                 boundsColor = RGB(255, 0, 0);   break; // Îπ®Í∞ÑÏÉâ
     }
 
-    HPEN boundsPen = CreatePen(PS_SOLID, 3, boundsColor); // µŒ≤≤ 3¿∏∑Œ ¡ı∞°
+    HPEN boundsPen = CreatePen(PS_SOLID, 3, boundsColor); // ÎëêÍªò 3ÏúºÎ°ú Ï¶ùÍ∞Ä
     HPEN oldPen = (HPEN)SelectObject(hdc, boundsPen);
 
-    // πÊ ∞Ê∞Ë ∞ËªÍ
+    // Î∞© Í≤ΩÍ≥Ñ Í≥ÑÏÇ∞
     float worldLeft = 0;
     float worldTop = 0;
     float worldRight = m_RoomWidth * GRID_SIZE;
     float worldBottom = m_RoomHeight * GRID_SIZE;
 
-    // »≠∏È ¡¬«•∑Œ ∫Ø»Ø
+    // ÌôîÎ©¥ Ï¢åÌëúÎ°ú Î≥ÄÌôò
     POINT topLeft = m_pCamera->WorldToScreen(worldLeft, worldTop);
     POINT topRight = m_pCamera->WorldToScreen(worldRight, worldTop);
     POINT bottomLeft = m_pCamera->WorldToScreen(worldLeft, worldBottom);
     POINT bottomRight = m_pCamera->WorldToScreen(worldRight, worldBottom);
 
-    // πÊ ∞Ê∞Ë ±◊∏Æ±‚
+    // Î∞© Í≤ΩÍ≥Ñ Í∑∏Î¶¨Í∏∞
     MoveToEx(hdc, topLeft.x, topLeft.y, NULL);
     LineTo(hdc, topRight.x, topRight.y);
     LineTo(hdc, bottomRight.x, bottomRight.y);
@@ -316,44 +508,26 @@ void TileMapEditor::RenderRoomBounds(HDC hdc)
     DeleteObject(boundsPen);
 }
 
-void TileMapEditor::SetRoomType(RoomType type)
-{
-    m_RoomType = type;
-    wcout << L"πÊ ≈∏¿‘¿Ã " << GetRoomTypeName() << L"¿∏∑Œ ∫Ø∞Êµ«æ˙Ω¿¥œ¥Ÿ." << endl;
-}
-
-wstring TileMapEditor::GetRoomTypeName() const
-{
-    switch (m_RoomType)
-    {
-    case RoomType::ENTRANCE: return L"¿‘±∏πÊ";
-    case RoomType::BATTLE:   return L"¿¸≈ıπÊ";
-    case RoomType::EXIT:     return L"√‚±∏πÊ";
-    case RoomType::BOSS:     return L"∫∏Ω∫πÊ";
-    default:                 return L"æÀ ºˆ æ¯¿Ω";
-    }
-}
-
 void TileMapEditor::RenderRoomInfo(HDC hdc)
 {
-    // πÊ ≈∏¿‘ø° µ˚∏• ªˆªÛ º≥¡§
+    // Î∞© ÌÉÄÏûÖÏóê Îî∞Î•∏ ÏÉâÏÉÅ ÏÑ§Ï†ï
     COLORREF typeColor;
     switch (m_RoomType)
     {
-    case RoomType::ENTRANCE: typeColor = RGB(0, 255, 0);   break; // √ ∑œªˆ
-    case RoomType::BATTLE:   typeColor = RGB(255, 255, 0); break; // ≥Î∂ıªˆ
-    case RoomType::EXIT:     typeColor = RGB(0, 255, 255); break; // √ª∑œªˆ
-    case RoomType::BOSS:     typeColor = RGB(255, 0, 255); break; // ∏∂¡®≈∏
+    case RoomType::ENTRANCE: typeColor = RGB(0, 255, 0);   break; // Ï¥àÎ°ùÏÉâ
+    case RoomType::BATTLE:   typeColor = RGB(255, 255, 0); break; // ÎÖ∏ÎûÄÏÉâ
+    case RoomType::EXIT:     typeColor = RGB(0, 255, 255); break; // Ï≤≠Î°ùÏÉâ
+    case RoomType::BOSS:     typeColor = RGB(255, 0, 255); break; // ÎßàÏ††ÌÉÄ
     default:                 typeColor = RGB(255, 255, 255); break;
     }
 
-    // πÊ ≈∏¿‘ ≈ÿΩ∫∆Æ «•Ω√
+    // Î∞© ÌÉÄÏûÖ ÌÖçÏä§Ìä∏ ÌëúÏãú
     SetTextColor(hdc, typeColor);
     SetBkMode(hdc, TRANSPARENT);
 
     wstring roomInfo = L"Room Type: " + GetRoomTypeName() + L" (ID: " + to_wstring(GetRoomTypeID()) + L")";
 
-    // »≠∏È øÏªÛ¥‹ø° «•Ω√
+    // ÌôîÎ©¥ Ïö∞ÏÉÅÎã®Ïóê ÌëúÏãú
     RECT clientRect;
     GetClientRect(GetActiveWindow(), &clientRect);
     int textX = clientRect.right - 300;
@@ -361,64 +535,287 @@ void TileMapEditor::RenderRoomInfo(HDC hdc)
 
     TextOut(hdc, textX, textY, roomInfo.c_str(), roomInfo.length());
 
-    // πÊ ≈©±‚ ¡§∫∏µµ «‘≤≤ «•Ω√
+    // Î∞© ÌÅ¨Í∏∞ Ï†ïÎ≥¥ÎèÑ Ìï®Íªò ÌëúÏãú
     SetTextColor(hdc, RGB(200, 200, 200));
     wstring sizeInfo = L"Size: " + to_wstring(m_RoomWidth) + L" x " + to_wstring(m_RoomHeight) + L" grids";
     TextOut(hdc, textX, textY + 20, sizeInfo.c_str(), sizeInfo.length());
 }
 
-void TileMapEditor::SaveMap()
+void TileMapEditor::RenderLayerInfo(HDC hdc)
 {
-    wstring filename = GenerateMapFileName();
-    SaveMapWithTileNames(filename);
+    RECT clientRect;
+    GetClientRect(GetActiveWindow(), &clientRect);
+
+    // ÌòÑÏû¨ Î†àÏù¥Ïñ¥ Ï†ïÎ≥¥
+    SetTextColor(hdc, RGB(255, 255, 0));
+    SetBkMode(hdc, TRANSPARENT);
+
+    wstring currentLayerInfo = L"Current Layer: " + GetLayerName();
+    TextOut(hdc, 10, 110, currentLayerInfo.c_str(), currentLayerInfo.length());
+
+    // Î†àÏù¥Ïñ¥ Í∞ÄÏãúÏÑ± Ï†ïÎ≥¥
+    int yOffset = 130;
+    SetTextColor(hdc, RGB(200, 200, 200));
+
+    TextOut(hdc, 10, yOffset, L"Layer Visibility:", 17);
+    yOffset += 20;
+
+    wstring layers[] = { L"1.Ground", L"2.Decoration", L"3.Cliff", L"4.Collider" };
+    LayerType layerTypes[] = { LayerType::GROUND, LayerType::DECORATION, LayerType::CLIFF, LayerType::COLLIDER };
+
+    for (int i = 0; i < 4; i++)
+    {
+        bool visible = IsLayerVisible(layerTypes[i]);
+        SetTextColor(hdc, visible ? RGB(0, 255, 0) : RGB(255, 0, 0));
+
+        wstring visibilityText = layers[i] + (visible ? L" [ON]" : L" [OFF]");
+        TextOut(hdc, 20, yOffset, visibilityText.c_str(), visibilityText.length());
+        yOffset += 15;
+    }
 }
 
-void TileMapEditor::SaveMapWithTileNames(const wstring& filename)
+void TileMapEditor::SetRoomType(RoomType type)
 {
-    wofstream file(filename);
+    m_RoomType = type;
+    wcout << L"Î∞© ÌÉÄÏûÖÏù¥ " << GetRoomTypeName() << L"ÏúºÎ°ú Î≥ÄÍ≤ΩÎêòÏóàÏäµÎãàÎã§." << endl;
+}
+
+wstring TileMapEditor::GetRoomTypeName() const
+{
+    switch (m_RoomType)
+    {
+    case RoomType::ENTRANCE: return L"ÏûÖÍµ¨Î∞©";
+    case RoomType::BATTLE:   return L"Ï†ÑÌà¨Î∞©";
+    case RoomType::EXIT:     return L"Ï∂úÍµ¨Î∞©";
+    case RoomType::BOSS:     return L"Î≥¥Ïä§Î∞©";
+    default:                 return L"ÏûÖÍµ¨Î∞©"; // Í∏∞Î≥∏Í∞í ÏÑ§Ï†ï
+    }
+}
+
+void TileMapEditor::SetCurrentLayer(LayerType layer)
+{
+    m_CurrentLayer = layer;
+    wcout << L"ÌòÑÏû¨ Î†àÏù¥Ïñ¥: " << GetLayerName() << endl;
+}
+
+wstring TileMapEditor::GetLayerName() const
+{
+    switch (m_CurrentLayer)
+    {
+    case LayerType::GROUND:     return L"Í∑∏ÎùºÏö¥Îìú";
+    case LayerType::DECORATION: return L"Ïû•Ïãù";
+    case LayerType::CLIFF:      return L"ÎÇ≠Îñ†Îü¨ÏßÄ";
+    case LayerType::COLLIDER:   return L"ÏΩúÎùºÏù¥Îçî";
+    default:                    return L"Ïïå Ïàò ÏóÜÏùå";
+    }
+}
+
+void TileMapEditor::ToggleLayerVisibility(LayerType layer)
+{
+    m_LayerVisibility[layer] = !m_LayerVisibility[layer];
+
+    wstring layerName;
+    switch (layer)
+    {
+    case LayerType::GROUND:     layerName = L"Í∑∏ÎùºÏö¥Îìú"; break;
+    case LayerType::DECORATION: layerName = L"Ïû•Ïãù"; break;
+    case LayerType::CLIFF:      layerName = L"ÎÇ≠Îñ†Îü¨ÏßÄ"; break;
+    case LayerType::COLLIDER:   layerName = L"ÏΩúÎùºÏù¥Îçî"; break;
+    }
+
+    wcout << layerName << L" Î†àÏù¥Ïñ¥ " << (m_LayerVisibility[layer] ? L"ÌëúÏãú" : L"Ïà®ÍπÄ") << endl;
+}
+
+bool TileMapEditor::IsLayerVisible(LayerType layer) const
+{
+    auto it = m_LayerVisibility.find(layer);
+    return (it != m_LayerVisibility.end()) ? it->second : true;
+}
+
+void TileMapEditor::SaveMapWithLayers(const wstring& filename)
+{
+    wcout << L"Ï†ÄÏû• Ï§ë: " << filename << endl;
+
+    wofstream file(filename, ios::out | ios::trunc); // ÌååÏùºÏùÑ ÏôÑÏ†ÑÌûà ÎçÆÏñ¥Ïì∞Í∏∞
     if (!file.is_open())
     {
-        wcout << L"∆ƒ¿œ ¿˙¿Â Ω«∆–: " << filename << endl;
+        wcout << L"‚ùå ÌååÏùº Ïó¥Í∏∞ Ïã§Ìå®: " << filename << endl;
         return;
     }
 
-    // «Ï¥ı ¡§∫∏ (πÊ ≈∏¿‘ ∆˜«‘)
-    file << L"# Tile Map Data" << endl;
-    file << L"# Format: TileName X Y" << endl;
-    file << L"GridSize=" << GRID_SIZE << endl;
-    file << L"RoomWidth=" << m_RoomWidth << endl;
-    file << L"RoomHeight=" << m_RoomHeight << endl;
-    file << L"RoomType=" << GetRoomTypeID() << endl; // πÊ ≈∏¿‘ ID ¿˙¿Â
-    file << L"RoomTypeName=" << GetRoomTypeName() << endl; // πÊ ≈∏¿‘ ¿Ã∏ß ¿˙¿Â (∞°µ∂º∫)
-    file << L"TileCount=" << m_TileMap.size() << endl;
-    file << endl;
-
-    // ≈∏¿œ µ•¿Ã≈Õ
-    for (const auto& tilePair : m_TileMap)
+    try
     {
-        const TileData& tile = tilePair.second;
-        if (!tile.isEmpty)
-        {
-            file << tile.tileName << L" " << tilePair.first.first << L" " << tilePair.first.second << endl;
-        }
-    }
+        // UTF-8 BOM Ï∂îÍ∞Ä (ÏÑ†ÌÉùÏÇ¨Ìï≠)
+        file.imbue(locale(""));
 
-    file.close();
-    wcout << L"∏  ¿˙¿Â øœ∑·: " << filename << L" (πÊ ≈∏¿‘: " << GetRoomTypeName() << L", ≈∏¿œ " << m_TileMap.size() << L"∞≥)" << endl;
+        // Ìó§Îçî Ï†ïÎ≥¥ ÏûëÏÑ±
+        cout << "Ìó§Îçî Ï†ïÎ≥¥ ÏûëÏÑ± Ï§ë..." << endl;
+        file << L"# Tile Map Data with Layers" << endl;
+        file << L"# Generated by Map Editor" << endl;
+        file << L"GridSize=" << GRID_SIZE << endl;
+        file << L"RoomWidth=" << m_RoomWidth << endl;
+        file << L"RoomHeight=" << m_RoomHeight << endl;
+        file << L"RoomType=" << (int)m_RoomType << endl;
+
+        // Î∞© ÌÉÄÏûÖ Ïù¥Î¶Ñ ÏûëÏÑ± (Í∞ïÏ†úÎ°ú ÏÑ§Ï†ï)
+        wstring roomTypeName;
+        switch (m_RoomType)
+        {
+        case RoomType::ENTRANCE: roomTypeName = L"ÏûÖÍµ¨Î∞©"; break;
+        case RoomType::BATTLE:   roomTypeName = L"Ï†ÑÌà¨Î∞©"; break;
+        case RoomType::EXIT:     roomTypeName = L"Ï∂úÍµ¨Î∞©"; break;
+        case RoomType::BOSS:     roomTypeName = L"Î≥¥Ïä§Î∞©"; break;
+        default:                 roomTypeName = L"ÏûÖÍµ¨Î∞©"; break;
+        }
+        file << L"RoomTypeName=" << roomTypeName << endl;
+        file << endl;
+
+        file.flush(); // Î≤ÑÌçº Í∞ïÏ†ú ÌîåÎü¨Ïãú
+        cout << "‚úì Ìó§Îçî Ï†ïÎ≥¥ ÏûëÏÑ± ÏôÑÎ£å" << endl;
+
+        // Í∑∏ÎùºÏö¥Îìú Î†àÏù¥Ïñ¥ Ï†ÄÏû•
+        cout << "Í∑∏ÎùºÏö¥Îìú Î†àÏù¥Ïñ¥ Ï†ÄÏû• Ï§ë..." << endl;
+        file << L"[GroundLayer]" << endl;
+        file << L"TileCount=" << m_LayerData.groundLayer.size() << endl;
+
+        int groundCount = 0;
+        for (const auto& tilePair : m_LayerData.groundLayer)
+        {
+            const TileData& tile = tilePair.second;
+            if (!tile.isEmpty && !tile.tileName.empty())
+            {
+                file << tile.tileName << L" " << tilePair.first.first << L" " << tilePair.first.second << endl;
+                groundCount++;
+            }
+        }
+        file << endl;
+        file.flush();
+        cout << "‚úì Í∑∏ÎùºÏö¥Îìú Î†àÏù¥Ïñ¥ Ï†ÄÏû• ÏôÑÎ£å: " << groundCount << "Í∞ú" << endl;
+
+        // Ïû•Ïãù Î†àÏù¥Ïñ¥ Ï†ÄÏû•
+        cout << "Ïû•Ïãù Î†àÏù¥Ïñ¥ Ï†ÄÏû• Ï§ë..." << endl;
+        file << L"[DecorationLayer]" << endl;
+        file << L"TileCount=" << m_LayerData.decorationLayer.size() << endl;
+
+        int decorationCount = 0;
+        for (const auto& tilePair : m_LayerData.decorationLayer)
+        {
+            const TileData& tile = tilePair.second;
+            if (!tile.isEmpty && !tile.tileName.empty())
+            {
+                file << tile.tileName << L" " << tilePair.first.first << L" " << tilePair.first.second << endl;
+                decorationCount++;
+            }
+        }
+        file << endl;
+        file.flush();
+        cout << "‚úì Ïû•Ïãù Î†àÏù¥Ïñ¥ Ï†ÄÏû• ÏôÑÎ£å: " << decorationCount << "Í∞ú" << endl;
+
+        // ÎÇ≠Îñ†Îü¨ÏßÄ Î†àÏù¥Ïñ¥ Ï†ÄÏû•
+        cout << "ÎÇ≠Îñ†Îü¨ÏßÄ Î†àÏù¥Ïñ¥ Ï†ÄÏû• Ï§ë..." << endl;
+        file << L"[CliffLayer]" << endl;
+
+        int cliffCount = 0;
+        for (int y = 0; y < m_RoomHeight; y++)
+        {
+            wstring line = L"";
+            for (int x = 0; x < m_RoomWidth; x++)
+            {
+                pair<int, int> gridPos = make_pair(x, y);
+                auto it = m_LayerData.cliffLayer.find(gridPos);
+                bool hasCliff = (it != m_LayerData.cliffLayer.end() && it->second);
+                line += (hasCliff ? L"1" : L"0");
+                if (hasCliff) cliffCount++;
+            }
+            file << line << endl;
+        }
+        file << endl;
+        file.flush();
+        cout << "‚úì ÎÇ≠Îñ†Îü¨ÏßÄ Î†àÏù¥Ïñ¥ Ï†ÄÏû• ÏôÑÎ£å: " << cliffCount << "Í∞ú" << endl;
+
+        // ÏΩúÎùºÏù¥Îçî Î†àÏù¥Ïñ¥ Ï†ÄÏû•
+        cout << "ÏΩúÎùºÏù¥Îçî Î†àÏù¥Ïñ¥ Ï†ÄÏû• Ï§ë..." << endl;
+        file << L"[ColliderLayer]" << endl;
+
+        int colliderCount = 0;
+        for (int y = 0; y < m_RoomHeight; y++)
+        {
+            wstring line = L"";
+            for (int x = 0; x < m_RoomWidth; x++)
+            {
+                pair<int, int> gridPos = make_pair(x, y);
+                auto it = m_LayerData.colliderLayer.find(gridPos);
+                bool hasCollider = (it != m_LayerData.colliderLayer.end() && it->second);
+                line += (hasCollider ? L"1" : L"0");
+                if (hasCollider) colliderCount++;
+            }
+            file << line << endl;
+        }
+
+        file.flush();
+        file.close();
+        cout << "‚úì ÏΩúÎùºÏù¥Îçî Î†àÏù¥Ïñ¥ Ï†ÄÏû• ÏôÑÎ£å: " << colliderCount << "Í∞ú" << endl;
+
+        // Ï†ÄÏû• ÏôÑÎ£å Î©îÏãúÏßÄ
+        wcout << L"‚úÖ Îßµ Ï†ÄÏû• ÏÑ±Í≥µ: " << filename << endl;
+        wcout << L"üìä Ï†ÄÏû• ÌÜµÍ≥Ñ:" << endl;
+        wcout << L"   - Î∞© ÌÉÄÏûÖ: " << roomTypeName << endl;
+        wcout << L"   - Í∑∏ÎùºÏö¥Îìú ÌÉÄÏùº: " << groundCount << L"Í∞ú" << endl;
+        wcout << L"   - Ïû•Ïãù ÌÉÄÏùº: " << decorationCount << L"Í∞ú" << endl;
+        wcout << L"   - ÎÇ≠Îñ†Îü¨ÏßÄ: " << cliffCount << L"Í∞ú" << endl;
+        wcout << L"   - ÏΩúÎùºÏù¥Îçî: " << colliderCount << L"Í∞ú" << endl;
+    }
+    catch (const exception& e)
+    {
+        cout << "‚ùå Ï†ÄÏû• Ï§ë Ïò§Î•ò Î∞úÏÉù: " << e.what() << endl;
+        file.close();
+    }
+}
+
+void TileMapEditor::SaveMap()
+{
+    // ÎîîÎ†âÌÜ†Î¶¨ ÏÉùÏÑ±
+    filesystem::create_directories(L"Maps");
+
+    // ÌÉÄÏûÑÏä§ÌÉ¨ÌîÑ Í∏∞Î∞ò ÌååÏùºÎ™Ö ÏÉùÏÑ±
+    time_t now = time(0);
+    tm* timeinfo = localtime(&now);
+
+    wchar_t buffer[256];
+    wcsftime(buffer, sizeof(buffer) / sizeof(wchar_t), L"Maps/map_%Y%m%d_%H%M%S.txt", timeinfo);
+    wstring filename = wstring(buffer);
+
+    cout << "=== Îßµ Ï†ÄÏû• ÏãúÏûë ===" << endl;
+    wcout << L"Ï†ÄÏû• ÌååÏùº: " << filename << endl;
+
+    // Î©îÏù∏ ÌååÏùºÎ°ú Ï†ÄÏû•
+    SaveMapWithLayers(filename);
+
+    // latest_map.txtÎ°úÎèÑ Ï†ÄÏû•
+    SaveMapWithLayers(L"Maps/latest_map.txt");
+
+    cout << "=== Îßµ Ï†ÄÏû• ÏôÑÎ£å ===" << endl;
 }
 
 void TileMapEditor::LoadMap()
 {
-    // ∞°¿Â √÷±Ÿ ∏  ∆ƒ¿œ √£±‚
     wstring filename = L"Maps/latest_map.txt";
-    LoadMapWithTileNames(filename);
+
+    // ÌååÏùº Ï°¥Ïû¨ ÌôïÏù∏
+    if (!filesystem::exists(filename))
+    {
+        wcout << L"‚ùå ÌååÏùºÏù¥ Ï°¥Ïû¨ÌïòÏßÄ ÏïäÏäµÎãàÎã§: " << filename << endl;
+        return;
+    }
+
+    LoadMapWithLayers(filename);
 }
 
 void TileMapEditor::SetRoomBounds(int width, int height)
 {
-    m_RoomWidth = max(10, min(100, width));   // 10~100 ±◊∏ÆµÂ∑Œ ¡¶«—
-    m_RoomHeight = max(10, min(100, height)); // 10~100 ±◊∏ÆµÂ∑Œ ¡¶«—
-    cout << "πÊ ≈©±‚ º≥¡§: " << m_RoomWidth << " x " << m_RoomHeight << " ±◊∏ÆµÂ" << endl;
+    m_RoomWidth = max(10, min(100, width));   // 10~100 Í∑∏Î¶¨ÎìúÎ°ú Ï†úÌïú
+    m_RoomHeight = max(10, min(100, height)); // 10~100 Í∑∏Î¶¨ÎìúÎ°ú Ï†úÌïú
+    cout << "Î∞© ÌÅ¨Í∏∞ ÏÑ§Ï†ï: " << m_RoomWidth << " x " << m_RoomHeight << " Í∑∏Î¶¨Îìú" << endl;
 }
 
 bool TileMapEditor::IsWithinRoomBounds(int gridX, int gridY) const
@@ -426,30 +823,42 @@ bool TileMapEditor::IsWithinRoomBounds(int gridX, int gridY) const
     return (gridX >= 0 && gridX < m_RoomWidth && gridY >= 0 && gridY < m_RoomHeight);
 }
 
-void TileMapEditor::LoadMapWithTileNames(const wstring& filename)
+void TileMapEditor::LoadMapWithLayers(const wstring& filename)
 {
     wifstream file(filename);
     if (!file.is_open())
     {
-        wcout << L"∆ƒ¿œ ∑ŒµÂ Ω«∆–: " << filename << endl;
+        wcout << L"ÌååÏùº Î°úÎìú Ïã§Ìå®: " << filename << endl;
         return;
     }
 
-    m_TileMap.clear();
+    // Î™®Îì† Î†àÏù¥Ïñ¥ Îç∞Ïù¥ÌÑ∞ Ï¥àÍ∏∞Ìôî
+    m_LayerData.groundLayer.clear();
+    m_LayerData.decorationLayer.clear();
+    m_LayerData.cliffLayer.clear();
+    m_LayerData.colliderLayer.clear();
+
     wstring line;
-    int loadedTiles = 0;
+    wstring currentSection = L"";
+    int loadedGroundTiles = 0;
+    int loadedDecorationTiles = 0;
+    int currentRow = 0;
 
     while (getline(file, line))
     {
-        // ¡÷ºÆ¿Ã≥™ ∫Û ¡Ÿ ∞«≥ ∂Ÿ±‚
+        // Ï£ºÏÑùÏù¥ÎÇò Îπà Ï§Ñ Í±¥ÎÑàÎõ∞Í∏∞
         if (line.empty() || line[0] == L'#') continue;
 
-        // º≥¡§ ∂Û¿ŒµÈ
-        if (line.find(L"GridSize=") == 0)
+        // ÏÑπÏÖò Íµ¨Î∂Ñ
+        if (line[0] == L'[' && line.back() == L']')
         {
-            // ±◊∏ÆµÂ ≈©±‚¥¬ ∞Ì¡§¿Ãπ«∑Œ π´Ω√ (»£»Øº∫ ¿Ø¡ˆ)
+            currentSection = line.substr(1, line.length() - 2);
+            currentRow = 0; // ÏÉà ÏÑπÏÖòÏóêÏÑú Ìñâ Ïπ¥Ïö¥ÌÑ∞ Î¶¨ÏÖã
             continue;
         }
+
+        // ÏÑ§Ï†ï ÎùºÏù∏Îì§
+        if (line.find(L"GridSize=") == 0) continue;
         if (line.find(L"RoomWidth=") == 0)
         {
             m_RoomWidth = stoi(line.substr(10));
@@ -468,45 +877,87 @@ void TileMapEditor::LoadMapWithTileNames(const wstring& filename)
         }
         if (line.find(L"RoomTypeName=") == 0 || line.find(L"TileCount=") == 0)
         {
-            continue; // Ω∫≈µ
+            continue;
         }
 
-        // ≈∏¿œ µ•¿Ã≈Õ ∆ƒΩÃ
-        wistringstream iss(line);
-        wstring tileName;
-        int gridX, gridY;
-
-        if (iss >> tileName >> gridX >> gridY)
+        // ÏÑπÏÖòÎ≥Ñ Îç∞Ïù¥ÌÑ∞ Ï≤òÎ¶¨
+        if (currentSection == L"GroundLayer")
         {
-            pair<int, int> gridPos = make_pair(gridX, gridY);
-            m_TileMap[gridPos] = TileData(tileName, gridX * GRID_SIZE, gridY * GRID_SIZE);
-            loadedTiles++;
+            wistringstream iss(line);
+            wstring tileName;
+            int gridX, gridY;
+
+            if (iss >> tileName >> gridX >> gridY)
+            {
+                pair<int, int> gridPos = make_pair(gridX, gridY);
+                m_LayerData.groundLayer[gridPos] = TileData(tileName, gridX * GRID_SIZE, gridY * GRID_SIZE, LayerType::GROUND);
+                loadedGroundTiles++;
+            }
+        }
+        else if (currentSection == L"DecorationLayer")
+        {
+            wistringstream iss(line);
+            wstring tileName;
+            int gridX, gridY;
+
+            if (iss >> tileName >> gridX >> gridY)
+            {
+                pair<int, int> gridPos = make_pair(gridX, gridY);
+                m_LayerData.decorationLayer[gridPos] = TileData(tileName, gridX * GRID_SIZE, gridY * GRID_SIZE, LayerType::DECORATION);
+                loadedDecorationTiles++;
+            }
+        }
+        else if (currentSection == L"CliffLayer")
+        {
+            for (int x = 0; x < min((int)line.length(), m_RoomWidth); x++)
+            {
+                if (line[x] == L'1')
+                {
+                    pair<int, int> gridPos = make_pair(x, currentRow);
+                    m_LayerData.cliffLayer[gridPos] = true;
+                }
+            }
+            currentRow++;
+        }
+        else if (currentSection == L"ColliderLayer")
+        {
+            for (int x = 0; x < min((int)line.length(), m_RoomWidth); x++)
+            {
+                if (line[x] == L'1')
+                {
+                    pair<int, int> gridPos = make_pair(x, currentRow);
+                    m_LayerData.colliderLayer[gridPos] = true;
+                }
+            }
+            currentRow++;
         }
     }
 
     file.close();
-    wcout << L"∏  ∑ŒµÂ øœ∑·: " << filename << L" (πÊ ≈∏¿‘: " << GetRoomTypeName() << L", ≈∏¿œ " << loadedTiles << L"∞≥)" << endl;
+
+    wcout << L"Îßµ Î°úÎìú ÏôÑÎ£å: " << filename << endl;
+    wcout << L"Î∞© ÌÉÄÏûÖ: " << GetRoomTypeName() << endl;
+    wcout << L"Í∑∏ÎùºÏö¥Îìú: " << loadedGroundTiles << L"Í∞ú, Ïû•Ïãù: " << loadedDecorationTiles << L"Í∞ú" << endl;
+    wcout << L"ÎÇ≠Îñ†Îü¨ÏßÄ: " << m_LayerData.cliffLayer.size() << L"Í∞ú, ÏΩúÎùºÏù¥Îçî: " << m_LayerData.colliderLayer.size() << L"Í∞ú" << endl;
 }
 
 wstring TileMapEditor::GenerateMapFileName()
 {
-    // Maps µ∑∫≈‰∏Æ ª˝º∫
     filesystem::create_directories(L"Maps");
 
-    // «ˆ¿Á Ω√∞£ ±‚π› ∆ƒ¿œ∏Ì ª˝º∫
     time_t now = time(0);
     tm* timeinfo = localtime(&now);
 
     wchar_t buffer[256];
     wcsftime(buffer, sizeof(buffer) / sizeof(wchar_t), L"Maps/map_%Y%m%d_%H%M%S.txt", timeinfo);
 
-    // latest_map.txt∑Œµµ ∫πªÁ ¿˙¿Â
-    wstring latestPath = L"Maps/latest_map.txt";
-
     return wstring(buffer);
 }
 
 void TileMapEditor::Release()
 {
-    m_TileMap.clear();
+    m_LayerData.groundLayer.clear();
+    m_LayerData.decorationLayer.clear();
+    m_LayerData.cliffLayer.clear();
+    m_LayerData.colliderLayer.clear();
 }

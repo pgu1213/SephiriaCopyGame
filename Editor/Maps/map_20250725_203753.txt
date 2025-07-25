@@ -1,0 +1,6 @@
+# Tile Map Data with Layers
+GridSize=16
+RoomWidth=50
+RoomHeight=30
+RoomType=0
+RoomTypeName=
