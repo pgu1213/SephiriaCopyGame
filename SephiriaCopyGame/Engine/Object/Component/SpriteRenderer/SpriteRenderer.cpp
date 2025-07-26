@@ -19,8 +19,6 @@ SpriteRenderer::SpriteRenderer(Object* owner)
     , m_UseSourceRect(false)
     , m_RenderLayer(0)
     , m_Depth(0.0f)
-    , m_SortingOrder(0)
-    , m_BlendMode(0)
     , m_FrameCount(1)
     , m_CurrentFrame(0)
     , m_FrameWidth(0)
@@ -49,8 +47,6 @@ SpriteRenderer::SpriteRenderer(const SpriteRenderer& other)
     , m_UseSourceRect(false)
     , m_RenderLayer(0)
     , m_Depth(0.0f)
-    , m_SortingOrder(other.m_SortingOrder)
-    , m_BlendMode(0)
     , m_FrameCount(1)
     , m_CurrentFrame(0)
     , m_FrameWidth(0)
@@ -89,7 +85,6 @@ void SpriteRenderer::CopyFrom(const IPrototypeable* source)
 		m_UseSourceRect = sourceSprite->m_UseSourceRect;
 		m_RenderLayer = sourceSprite->m_RenderLayer;
 		m_Depth = sourceSprite->m_Depth;
-		m_BlendMode = sourceSprite->m_BlendMode;
 		m_FrameCount = sourceSprite->m_FrameCount;
         m_CurrentFrame = 0;
 		m_FrameWidth = sourceSprite->m_FrameWidth;

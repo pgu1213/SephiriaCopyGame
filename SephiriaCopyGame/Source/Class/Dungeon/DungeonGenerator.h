@@ -1,139 +1,105 @@
 #pragma once
-#include <pch.h>
 #include <Engine/Object/Component/Component.h>
-#include <Engine/Object/Component/Collider/BoxCollider.h>
 
-// 타일 타입 열거형
-enum class TileType
+class Object;
+class SpriteRenderer;
+class BoxCollider;
+
+// 맵 데이터 구조체
+struct MapData
 {
-    EMPTY = 0,
-    WALL = 1,
-    FLOOR = 2,
-    DOOR = 3,
-    CORRIDOR = 4
+    int gridSize = 16;
+    int roomWidth = 50;
+    int roomHeight = 30;
+    int roomType = 0;
+    std::wstring roomTypeName;
+
+    // 레이어별 데이터
+    struct TileInfo
+    {
+        std::wstring tileName;
+        int x, y;
+    };
+
+    std::vector<TileInfo> groundTiles;
+    std::vector<TileInfo> decorationTiles;
+    std::vector<std::vector<bool>> cliffLayer;
+    std::vector<std::vector<bool>> colliderLayer;
 };
 
-// 방향 열거형
-enum class Direction
+// 타일 오브젝트 정보
+struct TileObject
 {
-    NORTH = 0,
-    EAST = 1,
-    SOUTH = 2,
-    WEST = 3
+    Object* tileObject = nullptr;
+    SpriteRenderer* spriteRenderer = nullptr;
+    BoxCollider* boxCollider = nullptr;
+    int gridX = 0;
+    int gridY = 0;
+    bool hasCollider = false;
 };
 
-// 방 구조체
-struct Room
-{
-    int x, y;           // 방의 위치
-    int width, height;  // 방의 크기
-    bool doors[4];      // 각 방향의 문 여부 (북, 동, 남, 서)
-    vector<pair<int, int>> tilePositions; // 방의 타일 위치들
-
-    Room() : x(0), y(0), width(0), height(0)
-    {
-        for (int i = 0; i < 4; i++) doors[i] = false;
-    }
-
-    Room(int _x, int _y, int _w, int _h) : x(_x), y(_y), width(_w), height(_h)
-    {
-        for (int i = 0; i < 4; i++) doors[i] = false;
-    }
-
-    // 방의 중심점 반환
-    pair<int, int> GetCenter() const
-    {
-        return { x + width / 2, y + height / 2 };
-    }
-
-    // 방이 겹치는지 확인
-    bool Overlaps(const Room& other) const
-    {
-        return !(x + width <= other.x || other.x + other.width <= x ||
-            y + height <= other.y || other.y + other.height <= y);
-    }
-};
-
-// 타일 데이터 구조체
-struct TileData
-{
-    int layer;
-    int x, y;
-    TileType type;
-    bool hasCollider;
-
-    TileData() : layer(0), x(0), y(0), type(TileType::EMPTY), hasCollider(false) {}
-    TileData(int _layer, int _x, int _y, TileType _type, bool _collider = false)
-        : layer(_layer), x(_x), y(_y), type(_type), hasCollider(_collider) {
-    }
-};
-
-// 던전 생성기 컴포넌트
 class DungeonGenerator : public Component
 {
-private:
-    int m_dungeonWidth;     // 던전 너비
-    int m_dungeonHeight;    // 던전 높이
-    int m_maxRooms;         // 최대 방 개수
-    int m_minRoomSize;      // 최소 방 크기
-    int m_maxRoomSize;      // 최대 방 크기
-
-    vector<Room> m_rooms;   // 생성된 방들
-    vector<vector<TileType>> m_dungeonMap;  // 던전 맵 데이터
-    vector<TileData> m_tileData;            // 렌더링용 타일 데이터
-    vector<Object*> m_colliderObjects;     // 콜라이더 오브젝트들
-
-    // 내부 메서드들
-    void InitializeDungeon();
-    void GenerateRooms();
-    void ConnectRooms();
-    void CreateCorridors();
-    void PlaceTiles();
-    void CreateColliders();
-
-    // 코리더 생성 관련
-    void CreateCorridor(const Room& room1, const Room& room2);
-    void CreateHorizontalCorridor(int x1, int x2, int y);
-    void CreateVerticalCorridor(int y1, int y2, int x);
-
-    // 유틸리티 메서드들
-    bool IsValidPosition(int x, int y);
-    bool CanPlaceRoom(const Room& room);
-    pair<int, int> FindNearestRoomConnection(const Room& room1, const Room& room2);
-    void SetTile(int x, int y, TileType type);
-    TileType GetTile(int x, int y);
-
-    // 맵 파일 로딩
-    void LoadMapFromFile(const string& filePath);
-    void ParseTileData(const string& line);
-
 public:
     DungeonGenerator(Object* owner);
     DungeonGenerator(const DungeonGenerator& other); // 복사 생성자
-
+protected:
+    Component* CloneImpl() const override;
+public:
     // Component 인터페이스 구현
     virtual void Init() override;
-    virtual void Update() override;
+    virtual void Update(float deltaTime) override;
     virtual void Render(HDC hdc) override;
-	virtual void OnDestroy() override;
+    virtual void OnDestroy() override;
 
-    // 던전 생성 메서드들
+    // 던전 생성 관련 함수들
+    void LoadMapFromFile(const std::wstring& filePath);
     void GenerateDungeon();
-    void GenerateDungeonFromFile(const string& filePath);
     void ClearDungeon();
 
-    // 설정 메서드들
-    void SetDungeonSize(int width, int height);
-    void SetRoomCount(int maxRooms);
-    void SetRoomSizeRange(int minSize, int maxSize);
+    // 타일 생성 및 관리
+    Object* CreateTileObject(const std::wstring& tileName, int gridX, int gridY, bool hasCollider = false);
+    void SetTilePosition(Object* tileObject, int gridX, int gridY);
 
-    // 접근자 메서드들
-    const vector<Room>& GetRooms() const { return m_rooms; }
-    const vector<TileData>& GetTileData() const { return m_tileData; }
-    TileType GetTileAt(int x, int y);
-    bool HasColliderAt(int x, int y);
+    // 맵 데이터 접근자
+    const MapData& GetMapData() const { return m_mapData; }
+    const std::vector<TileObject>& GetTileObjects() const { return m_tileObjects; }
 
-    // 게임 오브젝트 관련
-    void CreateTileObject(const TileData& tile);
-    void CreateColliderObject(int x, int y, int tileSize = 32);
+    // 설정
+    void SetTileSize(float size) { m_tileSize = size; }
+    float GetTileSize() const { return m_tileSize; }
+
+private:
+    // 파일 파싱 함수들
+    bool ParseMapFile(const std::vector<std::wstring>& lines);
+    void ParseGroundLayer(const std::vector<std::wstring>& lines, int& lineIndex);
+    void ParseDecorationLayer(const std::vector<std::wstring>& lines, int& lineIndex);
+    void ParseCliffLayer(const std::vector<std::wstring>& lines, int& lineIndex);
+    void ParseColliderLayer(const std::vector<std::wstring>& lines, int& lineIndex);
+
+    // 유틸리티 함수들
+    std::vector<std::wstring> SplitString(const std::wstring& str, wchar_t delimiter);
+    std::wstring Trim(const std::wstring& str);
+    bool StartsWith(const std::wstring& str, const std::wstring& prefix);
+
+    // 타일 생성 도우미 함수들
+    void CreateGroundTiles();
+    void CreateDecorationTiles();
+    void ApplyColliders();
+
+private:
+    MapData m_mapData;
+    std::vector<TileObject> m_tileObjects;
+
+    // 설정값들
+    float m_tileSize = 16.0f;
+    bool m_isLoaded = false;
+    bool m_isGenerated = false;
+
+    // 리소스 관리
+    std::map<std::wstring, std::wstring> m_tileResourcePaths;
+
+    // 디버그용
+    bool m_showDebugInfo = true;
+    bool m_showColliders = true;
 };

@@ -1,11 +1,14 @@
 #include <pch.h>
 #include "GameScene.h"
+#include <Engine/Managers/SceneManager/SceneManager.h>
 #include <Engine/Object/Object/Object.h>
 #include <Engine/Object/Component/SpriteRenderer/SpriteRenderer.h>
 #include <Engine/Object/Component/Animation/Animation.h>
 #include <Engine/Object/Component/Camera/Camera.h>
 #include <Engine/Object/Component/Collider/BoxCollider.h>
 #include <Engine/Object/Component/Collider/CircleCollider.h>
+#include <Source/Class/Dungeon/DungeonGenerator.h>
+#include <Engine/Object/Component/UIButton/UIButton.h>
 #include <Source/Class/Player/PlayerMovement.h>
 #include <Source/Class/Player/PlayerWeapon.h>
 
@@ -26,9 +29,22 @@ void GameScene::Init()
     Object* camera = CreateGameObject("MainCamera");
     Camera* cameraComponent = camera->AddComponent<Camera>();
     cameraComponent->SetPosition(0.0f, 0.0f);
-    cameraComponent->SetZoom(1.0f);
+    cameraComponent->SetZoom(2.0f);
     cameraComponent->SetViewportSize(WINCX, WINCY);
     Camera::SetMainCamera(cameraComponent);
+
+    Object* dungeon = CreateGameObject("Dungeon");
+	dungeon->SetPosition(-50.0f, 50.0f); // 던전 위치 설정
+	dungeon->AddComponent<DungeonGenerator>();
+    dungeon->GetComponent<DungeonGenerator>()->SetTileSize(64.0f); // 타일 크기 설정
+    dungeon->GetComponent<DungeonGenerator>()->LoadMapFromFile(L"Resource/MapFile/map_20250727_061249.txt"); // 맵 파일 로드
+	dungeon->GetComponent<DungeonGenerator>()->GenerateDungeon(); // 던전 생성
+
+    // 무기 먼저 (플레이어 뒤에 만들어지라고)
+    Object* playerweapon = CreateGameObject("PlayerWeapon");
+    playerweapon->AddComponent<SpriteRenderer>();
+    playerweapon->GetComponent<SpriteRenderer>()->SetSprite(L"Weapon_Sword0");
+    playerweapon->GetComponent<SpriteRenderer>()->SetSize(27.0f, 51.0f); // 플레이어 크기 설정
 
 	// 플레이어 생성
     Object* player = CreateGameObject("Player");
@@ -43,10 +59,7 @@ void GameScene::Init()
 	player->GetComponent<BoxCollider>()->SetLayerMask(CollisionLayer::All);
 	player->GetComponent<BoxCollider>()->SetIsTrigger(false);
 
-    Object* playerweapon = CreateGameObject("PlayerWeapon");
-    playerweapon->AddComponent<SpriteRenderer>();
-    playerweapon->GetComponent<SpriteRenderer>()->SetSprite(L"Weapon_Sword0");
-    playerweapon->GetComponent<SpriteRenderer>()->SetSize(32.0f, 32.0f); // 플레이어 크기 설정
+	// 플레이어와 무기 연결
     playerweapon->AddComponent<PlayerWeapon>();
 
     //테스트용

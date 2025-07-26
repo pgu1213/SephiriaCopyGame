@@ -1,434 +1,503 @@
-#include <pch.h>
+#include "pch.h"
 #include "DungeonGenerator.h"
+#include <Engine/Managers/ResourceManager/ResourceManager.h>
+#include <Engine/Managers/SceneManager/SceneManager.h>
 #include <Engine/Object/Object/Object.h>
 #include <Engine/Object/Component/SpriteRenderer/SpriteRenderer.h>
-#include <Engine/Managers/Engine/Engine.h>
+#include <Engine/Object/Component/Collider/BoxCollider.h>
 #include <fstream>
 #include <sstream>
-#include <random>
+#include <iostream>
 
 DungeonGenerator::DungeonGenerator(Object* owner)
     : Component(owner)
-    , m_dungeonWidth(50)
-    , m_dungeonHeight(50)
-    , m_maxRooms(10)
-    , m_minRoomSize(5)
-    , m_maxRoomSize(15)
+    , m_tileSize(64.0f)
+    , m_isLoaded(false)
+    , m_isGenerated(false)
+    , m_showDebugInfo(true)
+	, m_showColliders(true)
 {
 }
 
 DungeonGenerator::DungeonGenerator(const DungeonGenerator& other)
-    : Component(other.m_pOwner)
-    , m_dungeonWidth(other.m_dungeonWidth)
-    , m_dungeonHeight(other.m_dungeonHeight)
-	, m_maxRooms(other.m_maxRooms)
-    , m_minRoomSize(other.m_minRoomSize)
-    , m_maxRoomSize(other.m_maxRoomSize)
-    , m_rooms(other.m_rooms)
-    , m_dungeonMap(other.m_dungeonMap)
-    , m_tileData(other.m_tileData)
-	, m_colliderObjects(other.m_colliderObjects)
+    : Component(other)
+    , m_mapData(other.m_mapData)
+    , m_tileObjects(other.m_tileObjects)
+    , m_tileSize(other.m_tileSize)
+    , m_isLoaded(other.m_isLoaded)
+    , m_isGenerated(other.m_isGenerated)
+    , m_showDebugInfo(other.m_showDebugInfo)
+	, m_showColliders(other.m_showColliders)
 {
+}
+
+Component* DungeonGenerator::CloneImpl() const
+{
+	return new DungeonGenerator(*this);
 }
 
 void DungeonGenerator::Init()
 {
-    // 시작 시 던전 초기화
-    InitializeDungeon();
+    std::wcout << L"DungeonGenerator 초기화됨" << std::endl;
 }
 
-void DungeonGenerator::Update()
+void DungeonGenerator::Update(float deltaTime)
 {
-    // 업데이트 로직이 필요한 경우 여기에 구현
+    // 필요시 타일 오브젝트들의 업데이트 처리
 }
 
 void DungeonGenerator::Render(HDC hdc)
 {
-    // 던전 타일들을 렌더링
-    for (const auto& tile : m_tileData)
+    Component::Render(hdc);
+
+    if (m_showDebugInfo)
     {
-        // 타일 타입에 따른 색상 설정
-        COLORREF color;
-        switch (tile.type)
-        {
-        case TileType::WALL:
-            color = RGB(100, 100, 100);  // 회색
-            break;
-        case TileType::FLOOR:
-            color = RGB(200, 200, 200);  // 밝은 회색
-            break;
-        case TileType::DOOR:
-            color = RGB(139, 69, 19);    // 갈색
-            break;
-        case TileType::CORRIDOR:
-            color = RGB(150, 150, 150);  // 중간 회색
-            break;
-        default:
-            continue; // 빈 타일은 그리지 않음
-        }
+        // 디버그 정보 출력
+        SetTextColor(hdc, RGB(255, 255, 255));
+        SetBkMode(hdc, TRANSPARENT);
 
-        // 타일 그리기 (32x32 크기로 가정)
-        HBRUSH brush = CreateSolidBrush(color);
-        HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, brush);
+        std::wstring debugText = L"Dungeon: " + std::to_wstring(m_tileObjects.size()) + L" tiles";
+        TextOut(hdc, 10, 10, debugText.c_str(), debugText.length());
 
-        Rectangle(hdc, tile.x * 32, tile.y * 32,
-            (tile.x + 1) * 32, (tile.y + 1) * 32);
-
-        SelectObject(hdc, oldBrush);
-        DeleteObject(brush);
+        std::wstring roomInfo = L"Room: " + std::to_wstring(m_mapData.roomWidth) +
+            L"x" + std::to_wstring(m_mapData.roomHeight);
+        TextOut(hdc, 10, 30, roomInfo.c_str(), roomInfo.length());
     }
 }
 
 void DungeonGenerator::OnDestroy()
 {
-    // 콜라이더 오브젝트들 정리
-    for (auto* obj : m_colliderObjects)
-    {
-        if (obj)
-        {
-            delete obj;
-        }
-    }
-    m_colliderObjects.clear();
-
-    // 기타 메모리 정리
-    m_rooms.clear();
-    m_tileData.clear();
-    m_dungeonMap.clear();
+    ClearDungeon();
 }
 
-void DungeonGenerator::InitializeDungeon()
+void DungeonGenerator::LoadMapFromFile(const std::wstring& filePath)
 {
-    // 던전 맵 초기화
-    m_dungeonMap.assign(m_dungeonHeight, vector<TileType>(m_dungeonWidth, TileType::EMPTY));
-    m_rooms.clear();
-    m_tileData.clear();
+    std::wifstream file(filePath);
+    if (!file.is_open())
+    {
+        std::wcout << L"맵 파일을 열 수 없습니다: " << filePath << std::endl;
+        return;
+    }
+
+    std::vector<std::wstring> lines;
+    std::wstring line;
+    while (std::getline(file, line))
+    {
+        lines.push_back(line);
+    }
+    file.close();
+
+    if (ParseMapFile(lines))
+    {
+        m_isLoaded = true;
+        std::wcout << L"맵 파일 로드 성공: " << filePath << std::endl;
+        std::wcout << L"방 크기: " << m_mapData.roomWidth << L"x" << m_mapData.roomHeight << std::endl;
+        std::wcout << L"그라운드 타일: " << m_mapData.groundTiles.size() << L"개" << std::endl;
+        std::wcout << L"장식 타일: " << m_mapData.decorationTiles.size() << L"개" << std::endl;
+    }
+    else
+    {
+        std::wcout << L"맵 파일 파싱 실패: " << filePath << std::endl;
+    }
 }
 
 void DungeonGenerator::GenerateDungeon()
 {
-    InitializeDungeon();
-    GenerateRooms();
-    ConnectRooms();
-    PlaceTiles();
-    CreateColliders();
-}
-
-void DungeonGenerator::GenerateDungeonFromFile(const string& filePath)
-{
-    InitializeDungeon();
-    LoadMapFromFile(filePath);
-    CreateColliders();
-}
-
-void DungeonGenerator::LoadMapFromFile(const string& filePath)
-{
-    ifstream file(filePath);
-    if (!file.is_open())
+    if (!m_isLoaded)
     {
+        std::wcout << L"맵 데이터가 로드되지 않았습니다." << std::endl;
         return;
     }
 
-    string line;
-    while (getline(file, line))
-    {
-        if (line.empty() || line[0] == '#')
-            continue;
+    // 기존 던전 제거
+    ClearDungeon();
 
-        if (line.substr(0, 2) == "T=")
-        {
-            ParseTileData(line);
-        }
-    }
+    std::wcout << L"던전 생성 시작..." << std::endl;
 
-    file.close();
-}
+    // 1. 그라운드 타일 생성
+    CreateGroundTiles();
 
-void DungeonGenerator::ParseTileData(const string& line)
-{
-    // "T=Layer,X,Y,Type" 형식 파싱
-    size_t equalPos = line.find('=');
-    if (equalPos == string::npos) return;
+    // 2. 장식 타일 생성
+    CreateDecorationTiles();
 
-    string data = line.substr(equalPos + 1);
-    istringstream iss(data);
-    string token;
+    // 3. 콜라이더 적용
+    ApplyColliders();
 
-    vector<int> values;
-    while (getline(iss, token, ','))
-    {
-        values.push_back(stoi(token));
-    }
-
-    if (values.size() >= 4)
-    {
-        int layer = values[0];
-        int x = values[1];
-        int y = values[2];
-        int typeValue = values[3];
-
-        // 타일 타입 변환 (1 = 벽으로 가정)
-        TileType type = (typeValue == 1) ? TileType::WALL : TileType::FLOOR;
-
-        // 던전 맵에 설정
-        if (IsValidPosition(x, y))
-        {
-            SetTile(x, y, type);
-
-            // 타일 데이터 추가
-            bool hasCollider = (type == TileType::WALL);
-            m_tileData.emplace_back(layer, x, y, type, hasCollider);
-        }
-    }
-}
-
-void DungeonGenerator::GenerateRooms()
-{
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_int_distribution<> sizeDist(m_minRoomSize, m_maxRoomSize);
-    uniform_int_distribution<> xDist(1, m_dungeonWidth - m_maxRoomSize - 1);
-    uniform_int_distribution<> yDist(1, m_dungeonHeight - m_maxRoomSize - 1);
-
-    for (int i = 0; i < m_maxRooms; ++i)
-    {
-        int width = sizeDist(gen);
-        int height = sizeDist(gen);
-        int x = xDist(gen);
-        int y = yDist(gen);
-
-        Room newRoom(x, y, width, height);
-
-        if (CanPlaceRoom(newRoom))
-        {
-            m_rooms.push_back(newRoom);
-
-            // 방 영역을 바닥으로 설정
-            for (int rx = x; rx < x + width; ++rx)
-            {
-                for (int ry = y; ry < y + height; ++ry)
-                {
-                    SetTile(rx, ry, TileType::FLOOR);
-                }
-            }
-
-            // 방 테두리를 벽으로 설정
-            for (int rx = x - 1; rx <= x + width; ++rx)
-            {
-                if (IsValidPosition(rx, y - 1) && GetTile(rx, y - 1) == TileType::EMPTY)
-                    SetTile(rx, y - 1, TileType::WALL);
-                if (IsValidPosition(rx, y + height) && GetTile(rx, y + height) == TileType::EMPTY)
-                    SetTile(rx, y + height, TileType::WALL);
-            }
-            for (int ry = y - 1; ry <= y + height; ++ry)
-            {
-                if (IsValidPosition(x - 1, ry) && GetTile(x - 1, ry) == TileType::EMPTY)
-                    SetTile(x - 1, ry, TileType::WALL);
-                if (IsValidPosition(x + width, ry) && GetTile(x + width, ry) == TileType::EMPTY)
-                    SetTile(x + width, ry, TileType::WALL);
-            }
-        }
-    }
-}
-
-void DungeonGenerator::ConnectRooms()
-{
-    if (m_rooms.size() < 2) return;
-
-    // 모든 방을 연결
-    for (size_t i = 1; i < m_rooms.size(); ++i)
-    {
-        CreateCorridor(m_rooms[i - 1], m_rooms[i]);
-    }
-
-    // 추가 연결 생성 (순환 구조)
-    if (m_rooms.size() > 2)
-    {
-        CreateCorridor(m_rooms.back(), m_rooms.front());
-    }
-}
-
-void DungeonGenerator::CreateCorridor(const Room& room1, const Room& room2)
-{
-    auto center1 = room1.GetCenter();
-    auto center2 = room2.GetCenter();
-
-    // L자형 코리더 생성
-    CreateHorizontalCorridor(center1.first, center2.first, center1.second);
-    CreateVerticalCorridor(center1.second, center2.second, center2.first);
-}
-
-void DungeonGenerator::CreateHorizontalCorridor(int x1, int x2, int y)
-{
-    int startX = min(x1, x2);
-    int endX = max(x1, x2);
-
-    for (int x = startX; x <= endX; ++x)
-    {
-        if (IsValidPosition(x, y))
-        {
-            if (GetTile(x, y) == TileType::EMPTY || GetTile(x, y) == TileType::WALL)
-            {
-                SetTile(x, y, TileType::CORRIDOR);
-            }
-
-            // 코리더 벽 생성
-            if (IsValidPosition(x, y - 1) && GetTile(x, y - 1) == TileType::EMPTY)
-                SetTile(x, y - 1, TileType::WALL);
-            if (IsValidPosition(x, y + 1) && GetTile(x, y + 1) == TileType::EMPTY)
-                SetTile(x, y + 1, TileType::WALL);
-        }
-    }
-}
-
-void DungeonGenerator::CreateVerticalCorridor(int y1, int y2, int x)
-{
-    int startY = min(y1, y2);
-    int endY = max(y1, y2);
-
-    for (int y = startY; y <= endY; ++y)
-    {
-        if (IsValidPosition(x, y))
-        {
-            if (GetTile(x, y) == TileType::EMPTY || GetTile(x, y) == TileType::WALL)
-            {
-                SetTile(x, y, TileType::CORRIDOR);
-            }
-
-            // 코리더 벽 생성
-            if (IsValidPosition(x - 1, y) && GetTile(x - 1, y) == TileType::EMPTY)
-                SetTile(x - 1, y, TileType::WALL);
-            if (IsValidPosition(x + 1, y) && GetTile(x + 1, y) == TileType::EMPTY)
-                SetTile(x + 1, y, TileType::WALL);
-        }
-    }
-}
-
-void DungeonGenerator::PlaceTiles()
-{
-    m_tileData.clear();
-
-    for (int y = 0; y < m_dungeonHeight; ++y)
-    {
-        for (int x = 0; x < m_dungeonWidth; ++x)
-        {
-            TileType type = GetTile(x, y);
-            if (type != TileType::EMPTY)
-            {
-                bool hasCollider = (type == TileType::WALL);
-                m_tileData.emplace_back(0, x, y, type, hasCollider);
-            }
-        }
-    }
-}
-
-void DungeonGenerator::CreateColliders()
-{
-    // 기존 콜라이더 정리
-    for (auto* obj : m_colliderObjects)
-    {
-        if (obj) delete obj;
-    }
-    m_colliderObjects.clear();
-
-    // 벽 타일에 콜라이더 생성
-    for (const auto& tile : m_tileData)
-    {
-        if (tile.hasCollider)
-        {
-            CreateColliderObject(tile.x, tile.y);
-        }
-    }
-}
-
-void DungeonGenerator::CreateColliderObject(int x, int y, int tileSize)
-{
-    Object* colliderObj = new Object();
-    colliderObj->SetPosition(Vector2(x * tileSize + tileSize / 2.0f,
-        y * tileSize + tileSize / 2.0f));
-
-    BoxCollider* boxCollider = new BoxCollider();
-    boxCollider->SetSize(Vector2(tileSize, tileSize));
-    colliderObj->AddComponent(boxCollider);
-
-    m_colliderObjects.push_back(colliderObj);
-}
-
-// 유틸리티 메서드들
-bool DungeonGenerator::IsValidPosition(int x, int y)
-{
-    return x >= 0 && x < m_dungeonWidth && y >= 0 && y < m_dungeonHeight;
-}
-
-bool DungeonGenerator::CanPlaceRoom(const Room& room)
-{
-    // 던전 경계 확인
-    if (room.x <= 0 || room.y <= 0 ||
-        room.x + room.width >= m_dungeonWidth ||
-        room.y + room.height >= m_dungeonHeight)
-    {
-        return false;
-    }
-
-    // 다른 방과의 겹침 확인
-    for (const auto& existingRoom : m_rooms)
-    {
-        if (room.Overlaps(existingRoom))
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-void DungeonGenerator::SetTile(int x, int y, TileType type)
-{
-    if (IsValidPosition(x, y))
-    {
-        m_dungeonMap[y][x] = type;
-    }
-}
-
-TileType DungeonGenerator::GetTile(int x, int y)
-{
-    if (IsValidPosition(x, y))
-    {
-        return m_dungeonMap[y][x];
-    }
-    return TileType::EMPTY;
-}
-
-TileType DungeonGenerator::GetTileAt(int x, int y)
-{
-    return GetTile(x, y);
-}
-
-bool DungeonGenerator::HasColliderAt(int x, int y)
-{
-    TileType type = GetTile(x, y);
-    return type == TileType::WALL;
-}
-
-void DungeonGenerator::SetDungeonSize(int width, int height)
-{
-    m_dungeonWidth = width;
-    m_dungeonHeight = height;
-}
-
-void DungeonGenerator::SetRoomCount(int maxRooms)
-{
-    m_maxRooms = maxRooms;
-}
-
-void DungeonGenerator::SetRoomSizeRange(int minSize, int maxSize)
-{
-    m_minRoomSize = minSize;
-    m_maxRoomSize = maxSize;
+    m_isGenerated = true;
+    std::wcout << L"던전 생성 완료: " << m_tileObjects.size() << L"개 타일" << std::endl;
 }
 
 void DungeonGenerator::ClearDungeon()
 {
-    Release();
-    InitializeDungeon();
+    for (auto& tileObj : m_tileObjects)
+    {
+        if (tileObj.tileObject)
+        {
+            delete tileObj.tileObject;
+        }
+    }
+    m_tileObjects.clear();
+    m_isGenerated = false;
+}
+
+Object* DungeonGenerator::CreateTileObject(const std::wstring& tileName, int gridX, int gridY, bool hasCollider)
+{
+	Scene* currentScene = SceneManager::GetInstance()->GetCurrentScene();
+    if (!currentScene)
+    {
+        std::wcout << L"현재 씬이 없습니다. 타일 오브젝트를 생성할 수 없습니다." << std::endl;
+        return nullptr;
+	}
+
+    // string 변환
+    int sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, tileName.c_str(), (int)tileName.size(), NULL, 0, NULL, NULL);
+    string tileNamestring(sizeNeeded, 0);
+    WideCharToMultiByte(CP_UTF8, 0, tileName.c_str(), (int)tileName.size(), &tileNamestring[0], sizeNeeded, NULL, NULL);
+
+    // 그리드와 타일 기반으로 이름 정하기
+    string objectName;
+    if (tileNamestring.empty())
+    {
+        objectName = "Collider_x" + std::to_string(gridX) + "_y" + std::to_string(gridY);
+    }
+    else
+    {
+        objectName = tileNamestring + "_x" + std::to_string(gridX) + "_y" + std::to_string(gridY);
+    }
+
+    //이름 설정
+    Object* tileObject = currentScene->CreateGameObject(objectName);
+
+    // 위치 설정
+    SetTilePosition(tileObject, gridX, gridY);
+
+    // SpriteRenderer 컴포넌트 추가
+    SpriteRenderer* spriteRenderer = tileObject->AddComponent<SpriteRenderer>();
+    spriteRenderer->SetSprite(tileName);
+	spriteRenderer->SetSize(64.0f, 64.0f);
+
+    // 실제 리소스 로드 로직은 ResourceManager 구현에 따라 달라질 수 있음
+
+    // 콜라이더가 필요한 경우 추가
+    BoxCollider* boxCollider = nullptr;
+    if (hasCollider)
+    {
+        boxCollider = tileObject->AddComponent<BoxCollider>();
+		Vector2 colliderSize(m_tileSize, m_tileSize);
+        boxCollider->SetSize(colliderSize);
+    }
+
+    // TileObject 구조체 생성 및 추가
+    TileObject tileObjInfo;
+    tileObjInfo.tileObject = tileObject;
+    tileObjInfo.spriteRenderer = spriteRenderer;
+    tileObjInfo.boxCollider = boxCollider;
+    tileObjInfo.gridX = gridX;
+    tileObjInfo.gridY = gridY;
+    tileObjInfo.hasCollider = hasCollider;
+
+    m_tileObjects.push_back(tileObjInfo);
+
+    return tileObject;
+}
+
+void DungeonGenerator::SetTilePosition(Object* tileObject, int gridX, int gridY)
+{
+    if (!tileObject) return;
+
+    float worldX = gridX * m_tileSize;
+    float worldY = gridY * m_tileSize;
+
+    tileObject->SetPosition(worldX, worldY);
+}
+
+bool DungeonGenerator::ParseMapFile(const std::vector<std::wstring>& lines)
+{
+    try
+    {
+        int lineIndex = 0;
+        std::wstring currentSection = L"";
+
+        // 초기화
+        m_mapData.cliffLayer.clear();
+        m_mapData.colliderLayer.clear();
+        m_mapData.groundTiles.clear();
+        m_mapData.decorationTiles.clear();
+
+        while (lineIndex < lines.size())
+        {
+            std::wstring line = Trim(lines[lineIndex]);
+
+            // 빈 줄이나 주석 건너뛰기
+            if (line.empty() || line[0] == L'#')
+            {
+                lineIndex++;
+                continue;
+            }
+
+            // 헤더 정보 파싱
+            if (line.find(L'=') != std::wstring::npos)
+            {
+                size_t pos = line.find(L'=');
+                std::wstring key = Trim(line.substr(0, pos));
+                std::wstring value = Trim(line.substr(pos + 1));
+
+                if (key == L"GridSize")
+                    m_mapData.gridSize = std::stoi(value);
+                else if (key == L"RoomWidth")
+                    m_mapData.roomWidth = std::stoi(value);
+                else if (key == L"RoomHeight")
+                    m_mapData.roomHeight = std::stoi(value);
+                else if (key == L"RoomType")
+                    m_mapData.roomType = std::stoi(value);
+                else if (key == L"RoomTypeName")
+                    m_mapData.roomTypeName = value;
+
+                lineIndex++;
+                continue;
+            }
+
+            // 섹션 헤더 체크
+            if (line[0] == L'[' && line.back() == L']')
+            {
+                currentSection = line.substr(1, line.length() - 2);
+                lineIndex++;
+                continue;
+            }
+
+            // 섹션 내용 파싱
+            if (currentSection == L"GroundLayer")
+            {
+                ParseGroundLayer(lines, lineIndex);
+            }
+            else if (currentSection == L"DecorationLayer")
+            {
+                ParseDecorationLayer(lines, lineIndex);
+            }
+            else if (currentSection == L"CliffLayer")
+            {
+                ParseCliffLayer(lines, lineIndex);
+                break; // CliffLayer 파싱 후 바로 ColliderLayer로 넘어감
+            }
+            else
+            {
+                lineIndex++;
+            }
+        }
+
+        // ColliderLayer 파싱
+        for (int i = lineIndex; i < lines.size(); i++)
+        {
+            if (Trim(lines[i]) == L"[ColliderLayer]")
+            {
+                lineIndex = i + 1;
+                ParseColliderLayer(lines, lineIndex);
+                break;
+            }
+        }
+
+        return true;
+    }
+    catch (const std::exception& e)
+    {
+        std::cout << "맵 파일 파싱 중 오류: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+void DungeonGenerator::ParseGroundLayer(const std::vector<std::wstring>& lines, int& lineIndex)
+{
+    while (lineIndex < lines.size())
+    {
+        std::wstring line = Trim(lines[lineIndex]);
+
+        if (line.empty() || line[0] == L'[')
+            break;
+
+        if (StartsWith(line, L"TileCount="))
+        {
+            lineIndex++;
+            continue;
+        }
+
+        // 타일 데이터 파싱: "TileName X Y"
+        auto parts = SplitString(line, L' ');
+        if (parts.size() >= 3)
+        {
+            MapData::TileInfo tile;
+            tile.tileName = parts[0];
+            tile.x = std::stoi(parts[1]);
+            tile.y = std::stoi(parts[2]);
+            m_mapData.groundTiles.push_back(tile);
+        }
+
+        lineIndex++;
+    }
+}
+
+void DungeonGenerator::ParseDecorationLayer(const std::vector<std::wstring>& lines, int& lineIndex)
+{
+    while (lineIndex < lines.size())
+    {
+        std::wstring line = Trim(lines[lineIndex]);
+
+        if (line.empty() || line[0] == L'[')
+            break;
+
+        if (StartsWith(line, L"TileCount="))
+        {
+            lineIndex++;
+            continue;
+        }
+
+        // 타일 데이터 파싱: "TileName X Y"
+        auto parts = SplitString(line, L' ');
+        if (parts.size() >= 3)
+        {
+            MapData::TileInfo tile;
+            tile.tileName = parts[0];
+            tile.x = std::stoi(parts[1]);
+            tile.y = std::stoi(parts[2]);
+            m_mapData.decorationTiles.push_back(tile);
+        }
+
+        lineIndex++;
+    }
+}
+
+void DungeonGenerator::ParseCliffLayer(const std::vector<std::wstring>& lines, int& lineIndex)
+{
+    m_mapData.cliffLayer.resize(m_mapData.roomHeight);
+
+    for (int y = 0; y < m_mapData.roomHeight && lineIndex < lines.size(); y++)
+    {
+        std::wstring line = Trim(lines[lineIndex]);
+        if (line.length() >= m_mapData.roomWidth)
+        {
+            m_mapData.cliffLayer[y].resize(m_mapData.roomWidth);
+            for (int x = 0; x < m_mapData.roomWidth; x++)
+            {
+                m_mapData.cliffLayer[y][x] = (line[x] == L'1');
+            }
+        }
+        lineIndex++;
+    }
+}
+
+void DungeonGenerator::ParseColliderLayer(const std::vector<std::wstring>& lines, int& lineIndex)
+{
+    m_mapData.colliderLayer.resize(m_mapData.roomHeight);
+
+    for (int y = 0; y < m_mapData.roomHeight && lineIndex < lines.size(); y++)
+    {
+        std::wstring line = Trim(lines[lineIndex]);
+        if (line.length() >= m_mapData.roomWidth)
+        {
+            m_mapData.colliderLayer[y].resize(m_mapData.roomWidth);
+            for (int x = 0; x < m_mapData.roomWidth; x++)
+            {
+                m_mapData.colliderLayer[y][x] = (line[x] == L'1');
+            }
+        }
+        lineIndex++;
+    }
+}
+
+void DungeonGenerator::CreateGroundTiles()
+{
+    for (const auto& tile : m_mapData.groundTiles)
+    {
+        CreateTileObject(tile.tileName, tile.x, tile.y, false);
+    }
+
+    std::wcout << L"그라운드 타일 " << m_mapData.groundTiles.size() << L"개 생성" << std::endl;
+}
+
+void DungeonGenerator::CreateDecorationTiles()
+{
+    for (const auto& tile : m_mapData.decorationTiles)
+    {
+        CreateTileObject(tile.tileName, tile.x, tile.y, false);
+    }
+
+    std::wcout << L"장식 타일 " << m_mapData.decorationTiles.size() << L"개 생성" << std::endl;
+}
+
+void DungeonGenerator::ApplyColliders()
+{
+    int colliderCount = 0;
+
+    // 콜라이더 레이어 데이터를 확인하여 기존 타일에 콜라이더 추가
+    for (int y = 0; y < m_mapData.roomHeight; y++)
+    {
+        for (int x = 0; x < m_mapData.roomWidth; x++)
+        {
+            if (y < m_mapData.colliderLayer.size() &&
+                x < m_mapData.colliderLayer[y].size() &&
+                m_mapData.colliderLayer[y][x])
+            {
+                // 해당 위치에 이미 타일이 있는지 확인
+                bool foundTile = false;
+                for (auto& tileObj : m_tileObjects)
+                {
+                    if (tileObj.gridX == x && tileObj.gridY == y)
+                    {
+                        // 기존 타일에 콜라이더 추가
+                        if (!tileObj.hasCollider && !tileObj.boxCollider)
+                        {
+                            BoxCollider* boxCollider = tileObj.tileObject->AddComponent<BoxCollider>();
+							Vector2 colliderSize(m_tileSize, m_tileSize);
+                            boxCollider->SetSize(colliderSize);
+
+                            tileObj.boxCollider = boxCollider;
+                            tileObj.hasCollider = true;
+                            colliderCount++;
+                        }
+                        foundTile = true;
+                        break;
+                    }
+                }
+
+                // 타일이 없는 위치에는 보이지 않는 콜라이더 타일 생성
+                if (!foundTile)
+                {
+                    Object* colliderTile = CreateTileObject(L"", x, y, true);
+                    colliderCount++;
+                }
+            }
+        }
+    }
+
+    std::wcout << L"콜라이더 " << colliderCount << L"개 적용" << std::endl;
+}
+
+// 유틸리티 함수들
+std::vector<std::wstring> DungeonGenerator::SplitString(const std::wstring& str, wchar_t delimiter)
+{
+    std::vector<std::wstring> result;
+    std::wstringstream ss(str);
+    std::wstring item;
+
+    while (std::getline(ss, item, delimiter))
+    {
+        if (!item.empty())
+            result.push_back(item);
+    }
+
+    return result;
+}
+
+std::wstring DungeonGenerator::Trim(const std::wstring& str)
+{
+    size_t start = str.find_first_not_of(L" \t\r\n");
+    if (start == std::wstring::npos) return L"";
+
+    size_t end = str.find_last_not_of(L" \t\r\n");
+    return str.substr(start, end - start + 1);
+}
+
+bool DungeonGenerator::StartsWith(const std::wstring& str, const std::wstring& prefix)
+{
+    return str.length() >= prefix.length() &&
+        str.substr(0, prefix.length()) == prefix;
 }

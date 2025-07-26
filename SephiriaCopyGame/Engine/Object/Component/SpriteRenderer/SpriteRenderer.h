@@ -91,12 +91,6 @@ public:
     RECT GetBoundingRect() const;
     bool IsPointInside(const Vector2& point) const;
 
-    void SetBlendMode(int blendMode) { m_BlendMode = blendMode; }
-    int GetBlendMode() const { return m_BlendMode; }
-
-    void SetSortingOrder(int order) { m_SortingOrder = order; }
-    int GetSortingOrder() const { return m_SortingOrder; }
-
 private:
     void CalculateTransform();
     void RenderSprite(HDC hdc);
@@ -126,8 +120,6 @@ private:
 
     int m_RenderLayer;
     float m_Depth;
-    int m_SortingOrder;
-    int m_BlendMode;
 
     int m_FrameCount;
     int m_CurrentFrame;
