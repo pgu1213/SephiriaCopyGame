@@ -36,6 +36,12 @@ void GameScene::Init()
     SetupPlayerAnimation(player);
     playerweapon->AddComponent<PlayerWeapon>();
 
+    Object* cube = CreateGameObject("Cube");
+    cube->AddComponent<SpriteRenderer>();
+    cube->GetComponent<SpriteRenderer>()->SetSprite(L"Duelist_Mole_Airborne00_0");
+    cube->GetComponent<SpriteRenderer>()->SetPosition(960.0f, 540.0f);
+    cube->GetComponent<SpriteRenderer>()->SetSize(64.0f, 64.0f);
+
     // 카메라 설정
     Object* camera = CreateGameObject("MainCamera");
     camera->AddComponent<Camera>();
@@ -45,7 +51,7 @@ void GameScene::Init()
 	camera->GetComponent<Camera>()->SetViewportSize(800.0f, 600.0f);
 	camera->GetComponent<Camera>()->SetBounds(0.0f, 0.0f, 1600.0f, 1200.0f);
 	
-	//camera->GetComponent<Camera>()->SetMainCamera(this);
+	//camera->GetComponent<Camera>()->SetMainCamera();
     camera->GetComponent<Camera>()->SetTarget(player);
 
 	camera->GetComponent<Camera>()->SetFollowSpeed(5.0f);
