@@ -1,6 +1,8 @@
 #pragma once
 #include <Engine/Object/Component/Component.h>
 
+class Camera;
+
 class SpriteRenderer : public Component
 {
 public:
@@ -98,7 +100,9 @@ public:
 private:
     void CalculateTransform();
     void RenderSprite(HDC hdc);
+    bool ShouldCull(Camera* camera) const;
     void ApplyTransformations(Gdiplus::Graphics& graphics);
+    void ApplyTransformationsWithoutCamera(Gdiplus::Graphics& graphics); // 카메라 없을 시
 
     Vector2 CalculateAnchoredPosition() const;
     RECT CalculateCurrentFrameRect() const;

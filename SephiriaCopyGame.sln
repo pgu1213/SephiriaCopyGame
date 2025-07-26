@@ -10,7 +10,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Header", "Header", "{C8D527
 		Header\Define.h = Header\Define.h
 		Header\Enum.h = Header\Enum.h
 		Header\Extern.h = Header\Extern.h
-		Header\Function.h = Header\Function.h
 		Header\Struct.h = Header\Struct.h
 		Header\TypeDef.h = Header\TypeDef.h
 	EndProjectSection

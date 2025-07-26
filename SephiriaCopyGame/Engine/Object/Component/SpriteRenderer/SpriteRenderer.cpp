@@ -1,6 +1,7 @@
 #include <pch.h>  
 #include "SpriteRenderer.h"  
 #include <Engine/Managers/ResourceManager/ResourceManager.h>
+#include <Engine/Object/Component/Camera/Camera.h>
 
 SpriteRenderer::SpriteRenderer(Object* owner)
     : Component(owner)
@@ -117,10 +118,18 @@ void SpriteRenderer::Update(float deltaTime)
     }
 }
 
+
 void SpriteRenderer::Render(HDC hdc)
 {
     if (!m_IsVisible || !m_pSprite || m_Opacity <= 0.0f)
         return;
+
+    // 카메라 기반 컬링 (성능 최적화)
+    Camera* mainCamera = Camera::GetMainCamera();
+    if (mainCamera && ShouldCull(mainCamera))
+    {
+        return; // 화면 밖에 있으므로 렌더링하지 않음
+    }
 
     RenderSprite(hdc);
 }
@@ -227,44 +236,126 @@ void SpriteRenderer::RenderSprite(HDC hdc)
     }
 }
 
+bool SpriteRenderer::ShouldCull(Camera* camera) const
+{
+    if (!m_pObjOwner || !camera) return false;
+
+    // Object의 월드 위치 계산
+    const Transform& transform = m_pObjOwner->GetTransform();
+    Vector2 worldPos = Vector2(
+        transform.position.x + m_Position.x,
+        transform.position.y + m_Position.y
+    );
+
+    // 화면 좌표로 변환
+    Vector2 screenPos = camera->WorldToScreen(worldPos);
+
+    // 카메라 줌 적용된 크기 계산
+    float zoom = camera->GetZoom();
+    float scaledWidth = m_Size.x * m_Scale.x * zoom;
+    float scaledHeight = m_Size.y * m_Scale.y * zoom;
+
+    // 앵커 적용
+    float left = screenPos.x - scaledWidth * m_Anchor.x;
+    float right = left + scaledWidth;
+    float top = screenPos.y - scaledHeight * m_Anchor.y;
+    float bottom = top + scaledHeight;
+
+    // 뷰포트 크기
+    Vector2 viewport = camera->GetViewportSize();
+
+    // 여백을 두고 컬링 (완전히 화면 밖에 있을 때만)
+    float margin = 50.0f;
+    return (right < -margin || left > viewport.x + margin ||
+        bottom < -margin || top > viewport.y + margin);
+}
+
 void SpriteRenderer::ApplyTransformations(Gdiplus::Graphics& graphics)
 {
     if (!m_pObjOwner) return;
 
+    // 메인 카메라 가져오기
+    Camera* mainCamera = Camera::GetMainCamera();
+    if (!mainCamera)
+    {
+        // 카메라가 없으면 기본 변환만 적용 (디버그용)
+        ApplyTransformationsWithoutCamera(graphics);
+        return;
+    }
+
     // Object의 Transform 정보 가져오기
     const Transform& transform = m_pObjOwner->GetTransform();
 
-    // 변환 행렬 생성
+    // 1. 월드 좌표 계산 (Object Transform + SpriteRenderer Position)
+    Vector2 worldPosition = Vector2(
+        transform.position.x + m_Position.x,
+        transform.position.y + m_Position.y
+    );
+
+    // 2. 카메라를 통해 월드 좌표를 화면 좌표로 변환
+    Vector2 screenPosition = mainCamera->WorldToScreen(worldPosition);
+
+    // 3. 변환 행렬 생성 및 적용
     Gdiplus::Matrix matrix;
 
-    // 1. 이동 (Translation) - Object의 실제 위치 적용
-    matrix.Translate(transform.position.x, transform.position.y);
+    // 화면 좌표로 이동
+    matrix.Translate(screenPosition.x, screenPosition.y);
 
-    // 2. 회전 (Rotation) - 회전 중심점을 고려
+    // Object 회전 적용
     if (transform.rotation != 0.0f)
     {
-        matrix.Rotate(transform.rotation);
+        matrix.Rotate(RadianToDegree(transform.rotation));
     }
 
-    // 3. 스케일 (Scale)
-    if (transform.scale.x != 1.0f || transform.scale.y != 1.0f)
+    // SpriteRenderer 회전 적용
+    if (m_Rotation != 0.0f)
     {
-        matrix.Scale(transform.scale.x, transform.scale.y);
+        matrix.Rotate(RadianToDegree(m_Rotation));
     }
 
-    // 4. FlipX 처리
-    if (m_FlipX)
-    {
-        matrix.Scale(-1.0f, 1.0f);
-    }
+    // 카메라 줌 + Object 스케일 + SpriteRenderer 스케일 적용
+    float cameraZoom = mainCamera->GetZoom();
+    float finalScaleX = transform.scale.x * m_Scale.x * cameraZoom;
+    float finalScaleY = transform.scale.y * m_Scale.y * cameraZoom;
 
-    // 5. FlipY 처리 (필요한 경우)
-    if (m_FlipY)
-    {
-        matrix.Scale(1.0f, -1.0f);
-    }
+    // FlipX/Y 처리
+    if (m_FlipX) finalScaleX *= -1.0f;
+    if (m_FlipY) finalScaleY *= -1.0f;
+
+    matrix.Scale(finalScaleX, finalScaleY);
 
     // Graphics에 변환 행렬 적용
+    graphics.SetTransform(&matrix);
+}
+
+void SpriteRenderer::ApplyTransformationsWithoutCamera(Gdiplus::Graphics& graphics)
+{
+    if (!m_pObjOwner) return;
+
+    const Transform& transform = m_pObjOwner->GetTransform();
+    Gdiplus::Matrix matrix;
+
+    // 기본 위치 적용 (Transform + SpriteRenderer Position)
+    matrix.Translate(
+        transform.position.x + m_Position.x,
+        transform.position.y + m_Position.y
+    );
+
+    // 회전 적용
+    if (transform.rotation != 0.0f)
+    {
+        matrix.Rotate(RadianToDegree(transform.rotation));
+    }
+    if (m_Rotation != 0.0f)
+    {
+        matrix.Rotate(RadianToDegree(m_Rotation));
+    }
+
+    // 스케일 적용
+    float scaleX = transform.scale.x * m_Scale.x * (m_FlipX ? -1.0f : 1.0f);
+    float scaleY = transform.scale.y * m_Scale.y * (m_FlipY ? -1.0f : 1.0f);
+    matrix.Scale(scaleX, scaleY);
+
     graphics.SetTransform(&matrix);
 }
 
