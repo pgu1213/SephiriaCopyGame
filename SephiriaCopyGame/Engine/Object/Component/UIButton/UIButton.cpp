@@ -38,6 +38,34 @@ UIButton::UIButton(const UIButton& other)
 {
 }
 
+Component* UIButton::CloneImpl() const
+{
+    return new UIButton(*this);
+}
+
+void UIButton::CopyFrom(const IPrototypeable* source)
+{
+    Component::CopyFrom(source);
+
+    const UIButton* sourceButton = dynamic_cast<const UIButton*>(source);
+    if (sourceButton)
+    {
+        m_CurrentState = sourceButton->m_CurrentState;
+        m_PreviousState = sourceButton->m_PreviousState;
+        m_IsInteractable = sourceButton->m_IsInteractable;
+        m_IsPressed = sourceButton->m_IsPressed;
+        m_Text = sourceButton->m_Text;
+        m_FontName = sourceButton->m_FontName;
+        m_FontSize = sourceButton->m_FontSize;
+        m_IsBold = sourceButton->m_IsBold;
+        m_TextColor = sourceButton->m_TextColor;
+        m_NormalColor = sourceButton->m_NormalColor;
+        m_HoverColor = sourceButton->m_HoverColor;
+        m_PressedColor = sourceButton->m_PressedColor;
+		m_DisabledColor = sourceButton->m_DisabledColor;
+    }
+}
+
 void UIButton::Init()
 {
     Component::Init();

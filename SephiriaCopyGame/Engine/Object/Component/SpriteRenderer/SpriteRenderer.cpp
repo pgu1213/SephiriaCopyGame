@@ -59,7 +59,6 @@ SpriteRenderer::SpriteRenderer(const SpriteRenderer& other)
     , m_IsLooping(true)
     , m_TransformDirty(true)
 {  
-
 }  
 
 Component* SpriteRenderer::CloneImpl() const  
