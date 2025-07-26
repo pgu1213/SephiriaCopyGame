@@ -2,7 +2,7 @@
 #include "TitleScene.h"
 #include <Engine/Object/Component/SpriteRenderer/SpriteRenderer.h>
 #include <Engine/Object/Component/Animation/Animation.h>
-#include <Engine/Object/UI/Button/UIButton.h>
+#include <Engine/Object/Component/UIButton/UIButton.h>
 #include <Engine/Object/Component/Camera/Camera.h>
 #include <Engine/Managers/SceneManager/SceneManager.h>
 
@@ -29,19 +29,6 @@ void TitleScene::Init()
     title->GetComponent<SpriteRenderer>()->SetSprite(L"N_Title");
     title->GetComponent<SpriteRenderer>()->SetPosition(960.0f, 540.0f); // 중앙으로
     title->GetComponent<SpriteRenderer>()->SetSize(711.0f, 228.0f); // 배경 크기 설정
-
-
-
-    //Object* temp = CreateGameObject("temp");
-    //temp->AddComponent<SpriteRenderer>();
-    //temp->AddComponent<Animation>();
-
-    //vector<wstring> TitleFrames = { L"N_Title, N_Title" };
-    //temp->GetComponent<Animation>()->AddAnimationClip(L"Title", TitleFrames, 0.1f, true);
-
-    //// 애니메이션 재생
-    //temp->GetComponent<Animation>()->PlayAnimation(L"Title");
-
 
     // 카메라 설정
     auto cameraObject = make_unique<Object>("MainCamera");
