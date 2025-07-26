@@ -55,13 +55,18 @@ bool SceneManager::SceneLoad(const string& sceneName)
 	if (m_CurrentScene && m_CurrentSceneName != sceneName)
 	{
 		ClearCurrentScene();
+
+		m_CurrentScene = nullptr;
 	}
 
 	// 새로운 씬으로 변경
 	m_CurrentScene = it->second.get();
 	m_CurrentSceneName = sceneName;
 
-	m_CurrentScene->Init();
+	if (m_CurrentScene)
+	{
+		m_CurrentScene->Init();
+	}
 
 	return true;
 }
