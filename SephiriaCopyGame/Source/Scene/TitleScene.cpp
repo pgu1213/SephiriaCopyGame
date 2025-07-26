@@ -18,19 +18,6 @@ TitleScene::~TitleScene()
 
 void TitleScene::Init()
 {
- //   Object* background = CreateGameObject("Background");
- //   background->AddComponent<SpriteRenderer>();
-
-	//background->GetComponent<SpriteRenderer>()->SetSprite(L"N_Title_Back");
-	//background->GetComponent<SpriteRenderer>()->SetPosition(960.0f, 540.0f); // 중앙으로
-	//background->GetComponent<SpriteRenderer>()->SetSize(1920.0f, 1080.0f); // 배경 크기 설정
-
-    Object* title = CreateGameObject("Title");
-    title->AddComponent<SpriteRenderer>();
-
-    title->GetComponent<SpriteRenderer>()->SetSprite(L"N_Title");
-    title->GetComponent<SpriteRenderer>()->SetPosition(960.0f, 540.0f); // 중앙으로
-    title->GetComponent<SpriteRenderer>()->SetSize(711.0f, 228.0f); // 배경 크기 설정
 
     // 카메라 설정
     auto cameraObject = make_unique<Object>("MainCamera");
@@ -63,9 +50,21 @@ void TitleScene::Init()
 
 void TitleScene::SetupUI()
 {
+    // 백그라운드
     UI* background = CreateUI("Background");
     background->AddComponent<UIImage>();
 
     background->GetComponent<UIImage>()->SetSprite(L"N_Title_Back");
+	background->SetPosition(960.0f, 540.0f); // 중앙으로
+	background->SetSize(1920, 1080.0f); // 배경 크기 설정
+
+    // 타이틀
+    UI* title = CreateUI("Background");
+    title->AddComponent<UIImage>();
+
+    title->GetComponent<UIImage>()->SetSprite(L"N_Title");
+    title->SetPosition(960.0f, 540.0f);
+    title->SetSize(711.0f, 228.0f);
+
 
 }

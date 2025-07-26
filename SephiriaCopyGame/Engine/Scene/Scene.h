@@ -27,6 +27,7 @@ public:
 
 private:
     void ProcessPendingObjects(); // 추가/삭제 대기 중인 오브젝트들 처리
+    void ProcessPendingUI();
 
 private:
     vector<unique_ptr<Object>> m_GameObjects;
