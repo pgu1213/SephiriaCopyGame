@@ -134,6 +134,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Class\Player\PlayerFX.h" />
     <ClInclude Include="Source\Class\Dungeon\DungeonGenerator.h" />
     <ClInclude Include="Source\Class\Monster\Dynamite_Mole\DynamiteMoleAI.h" />
     <ClInclude Include="Source\Class\Monster\Duelist_Mole\DuelistMoleAI.h" />
@@ -173,6 +174,7 @@
     <ClInclude Include="Engine\Object\Component\UIImage\UIImage.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Class\Player\PlayerFX.cpp" />
     <ClCompile Include="Source\Class\Dungeon\DungeonGenerator.cpp" />
     <ClCompile Include="Source\Class\Monster\Dynamite_Mole\DynamiteMoleAI.cpp" />
     <ClCompile Include="Source\Class\Monster\Duelist_Mole\DuelistMoleAI.cpp" />

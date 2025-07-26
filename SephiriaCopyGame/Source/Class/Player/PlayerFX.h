@@ -4,11 +4,11 @@
 class InputManager;
 class Camera;
 
-class PlayerWeapon : public Component
+class PlayerFX : public Component
 {
 public:
-    explicit PlayerWeapon(Object* owner);
-    PlayerWeapon(const PlayerWeapon& other);
+    explicit PlayerFX(Object* owner);
+    PlayerFX(const PlayerFX& other);
 
 public:
     Component* CloneImpl() const override;

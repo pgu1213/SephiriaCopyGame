@@ -11,6 +11,7 @@
 #include <Engine/Object/Component/UIButton/UIButton.h>
 #include <Source/Class/Player/PlayerMovement.h>
 #include <Source/Class/Player/PlayerWeapon.h>
+#include <Source/Class/Player/PlayerFX.h>
 
 GameScene::GameScene()
 {
@@ -34,7 +35,6 @@ void GameScene::Init()
     Camera::SetMainCamera(cameraComponent);
 
     Object* dungeon = CreateGameObject("Dungeon");
-	dungeon->SetPosition(-50.0f, 50.0f); // 던전 위치 설정
 	dungeon->AddComponent<DungeonGenerator>();
     dungeon->GetComponent<DungeonGenerator>()->SetTileSize(64.0f); // 타일 크기 설정
     dungeon->GetComponent<DungeonGenerator>()->LoadMapFromFile(L"Resource/MapFile/map_20250727_061249.txt"); // 맵 파일 로드
@@ -45,9 +45,11 @@ void GameScene::Init()
     playerweapon->AddComponent<SpriteRenderer>();
     playerweapon->GetComponent<SpriteRenderer>()->SetSprite(L"Weapon_Sword0");
     playerweapon->GetComponent<SpriteRenderer>()->SetSize(27.0f, 51.0f); // 플레이어 크기 설정
+	playerweapon->GetComponent<SpriteRenderer>()->SetAnchor(0.5f, 0.7f);
 
 	// 플레이어 생성
     Object* player = CreateGameObject("Player");
+	player->SetPosition(500.0f, 500.0f);
 	player->AddComponent<SpriteRenderer>();
 	player->GetComponent<SpriteRenderer>()->SetSprite(L"Player_Basic_Move_Lower00");
 	player->GetComponent<SpriteRenderer>()->SetSize(64.0f, 64.0f); // 플레이어 크기 설정
@@ -61,6 +63,31 @@ void GameScene::Init()
 
 	// 플레이어와 무기 연결
     playerweapon->AddComponent<PlayerWeapon>();
+
+    // 플레이어 이펙트
+    Object* playerFX = CreateGameObject("PlayerSwingFX");
+    playerFX->AddComponent<SpriteRenderer>();
+    playerFX->GetComponent<SpriteRenderer>()->SetSprite(L"Sword0_Swing0");
+    playerFX->GetComponent<SpriteRenderer>()->SetSize(64.0f, 64.0f);
+    playerFX->AddComponent<PlayerFX>();
+	playerFX->AddComponent<BoxCollider>();
+    playerFX->GetComponent<BoxCollider>()->SetSize(Vector2(64.0f, 64.0f));
+	playerFX->GetComponent<BoxCollider>()->SetLayer(CollisionLayer::Player);
+	playerFX->GetComponent<BoxCollider>()->SetLayerMask(CollisionLayer::All);
+	playerFX->GetComponent<BoxCollider>()->SetIsTrigger(true);
+    Animation* SwingFXanim = playerFX->AddComponent<Animation>();
+
+    AnimationClip SwingFX1("SwingFX1", false);
+    SwingFX1.frames.push_back(AnimationFrame(L"Sword0_Swing0", 0.3f));
+    SwingFX1.frames.push_back(AnimationFrame(L"Sword0_Swing1", 0.3f));
+    SwingFXanim->AddClip(SwingFX1);
+
+    AnimationClip SwingFX2("SwingFX2", false);
+    SwingFX2.frames.push_back(AnimationFrame(L"Sword0_Swing2_0", 0.3f));
+    SwingFX2.frames.push_back(AnimationFrame(L"Sword0_Swing2_1", 0.3f));
+    SwingFXanim->AddClip(SwingFX2);
+
+	playerFX->SetActive(false);
 
     //테스트용
     Object* cube = CreateGameObject("Cube");

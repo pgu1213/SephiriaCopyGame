@@ -1,21 +1,21 @@
-ï»¿#include "pch.h"
-#include "PlayerWeapon.h"
+#include "pch.h"
+#include "PlayerFX.h"
 #include "Engine/Managers/InputManager/InputManager.h"
 #include "Engine/Object/Component/Camera/Camera.h"
 #include "Engine/Object/Object/Object.h"
 #include "Engine/Managers/SceneManager/SceneManager.h"
 #include "Engine/Object/Component/SpriteRenderer/SpriteRenderer.h"
 
-PlayerWeapon::PlayerWeapon(Object* owner)
+PlayerFX::PlayerFX(Object* owner)
     : Component(owner)
     , m_Position(0.0f, 0.0f)
     , m_Rotation(0.0f)
-    , m_OffsetFromPlayer(15.0f, 0.0f)
+    , m_OffsetFromPlayer(30.0f, 0.0f)
     , m_IsFlipped(false)
 {
 }
 
-PlayerWeapon::PlayerWeapon(const PlayerWeapon& other)
+PlayerFX::PlayerFX(const PlayerFX& other)
     : Component(other.m_pObjOwner)
     , m_Position(other.m_Position)
     , m_Rotation(other.m_Rotation)
@@ -24,12 +24,12 @@ PlayerWeapon::PlayerWeapon(const PlayerWeapon& other)
 {
 }
 
-Component* PlayerWeapon::CloneImpl() const
+Component* PlayerFX::CloneImpl() const
 {
-    return new PlayerWeapon(*this);
+    return new PlayerFX(*this);
 }
 
-void PlayerWeapon::Update(float deltaTime)
+void PlayerFX::Update(float deltaTime)
 {
     UpdateRotationToMouse();
 
@@ -42,21 +42,21 @@ void PlayerWeapon::Update(float deltaTime)
     }
     else
     {
-        // í”Œë ˆì´ì–´ ì˜¤ë¸Œì íŠ¸ê°€ ì—†ìœ¼ë©´ í˜„ì¬ ìœ„ì¹˜ ìœ ì§€
-        // SetPosition(m_Position.x, m_Position.y); // í•„ìš”ì‹œ ì‚¬ìš©
-	}
+        // ÇÃ·¹ÀÌ¾î ¿ÀºêÁ§Æ®°¡ ¾øÀ¸¸é ÇöÀç À§Ä¡ À¯Áö
+        // SetPosition(m_Position.x, m_Position.y); // ÇÊ¿ä½Ã »ç¿ë
+    }
 
-    // ì¢Œí´ë¦­ ë¬´ê¸° íœ˜ë‘ë¥´ê¸° (ì½¤ë³´)
-    // ìš°í´ë¦­ ë°©íŒ¨ ë°©ì–´
+    // ÁÂÅ¬¸¯ ¹«±â ÈÖµÎ¸£±â (ÄŞº¸)
+    // ¿ìÅ¬¸¯ ¹æÆĞ ¹æ¾î
 
 }
 
-void PlayerWeapon::SetRotation(float angle)
+void PlayerFX::SetRotation(float angle)
 {
-    float adjustedAngle = angle;
+    float adjustedAngle = angle + 90.0f;
 
-    // -180ë„ ~ 180ë„ ì‹œìŠ¤í…œì—ì„œ ë°˜ì „ ì¡°ê±´
-    // 7~11ì‹œ ë°©í–¥: (90ë„ < angle <= 180ë„) ë˜ëŠ” (-180ë„ <= angle < -90ë„)
+    // -180µµ ~ 180µµ ½Ã½ºÅÛ¿¡¼­ ¹İÀü Á¶°Ç
+    // 7~11½Ã ¹æÇâ: (90µµ < angle <= 180µµ) ¶Ç´Â (-180µµ <= angle < -90µµ)
     bool shouldFlip = (angle > 90.0f) || (angle < -90.0f);
 
     if (shouldFlip != m_IsFlipped)
@@ -65,22 +65,22 @@ void PlayerWeapon::SetRotation(float angle)
         m_pObjOwner->GetComponent<SpriteRenderer>()->SetFlipX(m_IsFlipped);
     }
 
-    // ìŠ¤í”„ë¼ì´íŠ¸ê°€ ë°˜ì „ë˜ì—ˆì„ ë•Œ íšŒì „ì„ ì •ë°˜ëŒ€ë¡œ ì ìš©
+    // ½ºÇÁ¶óÀÌÆ®°¡ ¹İÀüµÇ¾úÀ» ¶§ È¸ÀüÀ» Á¤¹İ´ë·Î Àû¿ë
     //if (m_IsFlipped)
     //{
-    //    adjustedAngle = -angle;  // ë‹¨ìˆœíˆ ê°ë„ë¥¼ ìŒìˆ˜ë¡œ ë³€ê²½
+    //    adjustedAngle = -angle;  // ´Ü¼øÈ÷ °¢µµ¸¦ À½¼ö·Î º¯°æ
     //}
 
     float angleInRadians = DegreeToRadian(adjustedAngle);
     m_pObjOwner->SetRotation(angleInRadians);
 }
 
-void PlayerWeapon::UpdateRotationToMouse()
+void PlayerFX::UpdateRotationToMouse()
 {
     float angleToMouse = CalculateAngleToMouse();
     float anglechange = angleToMouse - m_Rotation;
 
-    // ê°ë„ ì°¨ì´ë¥¼ -180ë„ ~ 180ë„ ë²”ìœ„ë¡œ ì •ê·œí™”
+    // °¢µµ Â÷ÀÌ¸¦ -180µµ ~ 180µµ ¹üÀ§·Î Á¤±ÔÈ­
     while (anglechange < -180.0f)
     {
         anglechange += 360.0f;
@@ -93,14 +93,14 @@ void PlayerWeapon::UpdateRotationToMouse()
     float lerpFactor = 0.2f;
     m_Rotation += anglechange * lerpFactor;
 
-    // m_Rotationì„ -180ë„ ~ 180ë„ ë²”ìœ„ë¡œ ìœ ì§€
+    // m_RotationÀ» -180µµ ~ 180µµ ¹üÀ§·Î À¯Áö
     while (m_Rotation >= 180.0f) m_Rotation -= 360.0f;
     while (m_Rotation < -180.0f) m_Rotation += 360.0f;
 
     SetRotation(m_Rotation);
 }
 
-float PlayerWeapon::CalculateAngleToMouse()
+float PlayerFX::CalculateAngleToMouse()
 {
     POINT mousePos = InputManager::GetInstance()->GetMousePosition();
     float mouseX = static_cast<float>(mousePos.x);
@@ -144,14 +144,14 @@ float PlayerWeapon::CalculateAngleToMouse()
     float angleInRadians = atan2f(deltaY, deltaX);
     float angleInDegrees = RadianToDegree(angleInRadians);
 
-    // -180ë„ ~ 180ë„ ë²”ìœ„ë¡œ ì •ê·œí™” (3ì‹œ=0ë„, 9ì‹œ=180ë„/-180ë„)
+    // -180µµ ~ 180µµ ¹üÀ§·Î Á¤±ÔÈ­ (3½Ã=0µµ, 9½Ã=180µµ/-180µµ)
     while (angleInDegrees > 180.0f) angleInDegrees -= 360.0f;
     while (angleInDegrees < -180.0f) angleInDegrees += 360.0f;
 
     return angleInDegrees;
 }
 
-void PlayerWeapon::UpdatePositionAroundPlayer(float playerX, float playerY)
+void PlayerFX::UpdatePositionAroundPlayer(float playerX, float playerY)
 {
     float rotationInRadians = DegreeToRadian(m_Rotation);
 

@@ -126,6 +126,9 @@
     <ClInclude Include="Source\Class\Dungeon\DungeonGenerator.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Class\Player\PlayerFX.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Client.cpp">
@@ -225,6 +228,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Source\Class\Dungeon\DungeonGenerator.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Class\Player\PlayerFX.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
