@@ -48,10 +48,9 @@ void GameScene::Init()
 
 	camera->GetComponent<Camera>()->SetPosition(0.0f, 0.0f);
 	camera->GetComponent<Camera>()->SetZoom(1.0f);
-	camera->GetComponent<Camera>()->SetViewportSize(800.0f, 600.0f);
-	camera->GetComponent<Camera>()->SetBounds(0.0f, 0.0f, 1600.0f, 1200.0f);
+	camera->GetComponent<Camera>()->SetViewportSize(WINCX, WINCY);
 	
-	//camera->GetComponent<Camera>()->SetMainCamera();
+	camera->GetComponent<Camera>()->SetMainCamera(camera->GetComponent<Camera>());
     camera->GetComponent<Camera>()->SetTarget(player);
 
 	camera->GetComponent<Camera>()->SetFollowSpeed(5.0f);

@@ -53,14 +53,6 @@ Camera::Camera(const Camera& other)
 {
 }
 
-Camera::~Camera()
-{
-    if (s_MainCamera == this)
-    {
-        s_MainCamera = nullptr;
-    }
-}
-
 Component* Camera::CloneImpl() const
 {
     return new Camera(*this);
@@ -96,6 +88,14 @@ void Camera::Update(float deltaTime)
 
 void Camera::Render(HDC hdc)
 {
+}
+
+void Camera::OnDestroy()
+{
+    if (s_MainCamera == this)
+    {
+        s_MainCamera = nullptr;
+    }
 }
 
 void Camera::SetPosition(float x, float y)

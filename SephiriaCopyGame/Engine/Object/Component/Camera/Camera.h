@@ -6,7 +6,6 @@ class Camera : public Component
 public:
     Camera(Object* owner);
     Camera(const Camera& other); // 복사 생성자
-    virtual ~Camera();
 
 protected:
     Component* CloneImpl() const override;
@@ -15,7 +14,7 @@ public:
     void CopyFrom(const IPrototypeable* source) override;
     void Update(float deltaTime) override;
     void Render(HDC hdc) override;
-
+	void OnDestroy() override;
 public:
     // 카메라 위치 설정
     void SetPosition(float x, float y);
