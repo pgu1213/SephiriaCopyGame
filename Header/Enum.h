@@ -39,7 +39,7 @@ enum class UIEventType
 enum class ButtonState
 {
     Normal,
-    Hovered,
+    Hover,
     Pressed,
     Disabled
 };

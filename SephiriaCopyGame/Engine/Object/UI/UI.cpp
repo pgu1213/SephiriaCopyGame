@@ -73,9 +73,9 @@ void UI::Render(HDC hdc)
 }
 
 // 프로토타입 클론 생성
-unique_ptr<IPrototypeable> Object::Clone() const
+unique_ptr<IPrototypeable> UI::Clone() const
 {
-    return make_unique<Object>(*this);
+    return make_unique<UI>(*this);
 }
 
 void UI::CopyFrom(const IPrototypeable* source)
