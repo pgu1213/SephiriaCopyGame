@@ -36,7 +36,7 @@ void UI::Update(float DeltaTime)
     // 자식 오브젝트 업데이트
     for (auto* child : m_Children)
     {
-        if (child->IsActive())
+        if (child)
         {
             child->Update(DeltaTime);
         }

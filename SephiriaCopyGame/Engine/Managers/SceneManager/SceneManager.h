@@ -16,11 +16,13 @@ public:
 	bool SceneLoad(const string& sceneName);
 	void RegisterScene(const string& sceneName, unique_ptr<Scene> scene);
 	Scene* GetCurrentScene() const { return m_CurrentScene; }
-
 private:
+	void ProcessSceneChange();
 	void ClearCurrentScene();
-
 private:
+	string m_NextSceneName = "";
+	bool m_bisSceneChangeRequested = false;
+
 	map<string, unique_ptr<Scene>> m_Scenes;
 	Scene* m_CurrentScene;
 	string m_CurrentSceneName;

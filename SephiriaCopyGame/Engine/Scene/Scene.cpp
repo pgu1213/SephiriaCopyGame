@@ -7,14 +7,6 @@ void Scene::Update(float DeltaTime)
     ProcessPendingUI();
     ProcessPendingObjects();
 
-    // UI 오브젝트 업데이트
-    for (auto& ui : m_UI)
-    {
-        if (ui)
-        {
-            ui->Update(DeltaTime);
-        }
-    }
     // 모든 게임 오브젝트 업데이트
     for (auto& obj : m_GameObjects)
     {
@@ -23,24 +15,32 @@ void Scene::Update(float DeltaTime)
             obj->Update(DeltaTime);
         }
     }
-}
-
-void Scene::Render(HDC hdc)
-{
-    // UI 오브젝트 렌더링
+    // UI 오브젝트 업데이트
     for (auto& ui : m_UI)
     {
         if (ui)
         {
-            ui->Render(hdc);
+            ui->Update(DeltaTime);
         }
     }
+}
+
+void Scene::Render(HDC hdc)
+{
     // 모든 게임 오브젝트 업데이트
     for (auto& obj : m_GameObjects)
     {
         if (obj)
         {
             obj->Render(hdc);
+        }
+    }
+    // UI 오브젝트 렌더링
+    for (auto& ui : m_UI)
+    {
+        if (ui)
+        {
+            ui->Render(hdc);
         }
     }
 }

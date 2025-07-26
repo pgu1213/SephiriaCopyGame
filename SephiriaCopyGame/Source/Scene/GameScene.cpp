@@ -46,7 +46,7 @@ void GameScene::Init()
     Object* camera = CreateGameObject("MainCamera");
     camera->AddComponent<Camera>();
 
-	camera->GetComponent<Camera>()->SetPosition(400.0f, 300.0f);
+	camera->GetComponent<Camera>()->SetPosition(0.0f, 0.0f);
 	camera->GetComponent<Camera>()->SetZoom(1.0f);
 	camera->GetComponent<Camera>()->SetViewportSize(800.0f, 600.0f);
 	camera->GetComponent<Camera>()->SetBounds(0.0f, 0.0f, 1600.0f, 1200.0f);
