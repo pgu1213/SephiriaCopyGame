@@ -2,9 +2,64 @@
 #include "BoxCollider.h"
 #include "CircleCollider.h"
 
-BoxCollider::BoxCollider(Object* owner, const Vector2& size)
-    : Collider(owner), m_Size(size)
+BoxCollider::BoxCollider(Object* owner)
+	: Collider(owner)
+    , m_Size(Vector2::Zero)
 {
+}
+
+BoxCollider::BoxCollider(const BoxCollider& other)
+	: Collider(other)
+    , m_Size(other.m_Size)
+{
+}
+
+Component* BoxCollider::CloneImpl() const
+{
+    return new BoxCollider(*this);
+}
+
+void BoxCollider::CopyFrom(const IPrototypeable* source)
+{
+    Component::CopyFrom(source);
+
+    const BoxCollider* sourceCollider = dynamic_cast<const BoxCollider*>(source);
+    if (sourceCollider)
+    {
+        m_Size = sourceCollider->m_Size;
+        m_Offset = sourceCollider->m_Offset;
+        m_IsTrigger = sourceCollider->m_IsTrigger;
+        m_Layer = sourceCollider->m_Layer;
+        m_LayerMask = sourceCollider->m_LayerMask;
+        m_Enabled = sourceCollider->m_Enabled;
+        // 이벤트 콜백 복사
+        m_OnCollisionEnter = sourceCollider->m_OnCollisionEnter;
+        m_OnCollisionStay = sourceCollider->m_OnCollisionStay;
+        m_OnCollisionExit = sourceCollider->m_OnCollisionExit;
+        m_OnTriggerEnter = sourceCollider->m_OnTriggerEnter;
+        m_OnTriggerStay = sourceCollider->m_OnTriggerStay;
+		m_OnTriggerExit = sourceCollider->m_OnTriggerExit;
+    }
+}
+
+void BoxCollider::Init()
+{
+    Collider::Init();
+}
+
+void BoxCollider::Update(float deltaTime)
+{
+    Collider::Update(deltaTime);
+}
+
+void BoxCollider::Render(HDC hdc)
+{
+    Collider::Render(hdc);
+}
+
+void BoxCollider::OnDestroy()
+{
+    Collider::OnDestroy();
 }
 
 bool BoxCollider::CheckCollision(Collider* other)
@@ -43,6 +98,11 @@ Vector2 BoxCollider::GetCenter()
         );
     }
     return m_Offset;
+}
+
+Vector2 BoxCollider::GetSize()
+{
+    return Vector2(m_Size.x * m_Scale.x, m_Size.y * m_Scale.y);
 }
 
 bool BoxCollider::CheckCollisionWithBox(BoxCollider* other)

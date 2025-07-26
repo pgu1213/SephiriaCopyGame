@@ -2,6 +2,7 @@
 #include <Engine/Object/Component/Component.h>
 
 class Collider;
+class Camera;
 
 using CollisionCallback = function<void(Collider*)>;
 
@@ -15,6 +16,7 @@ public:
     // 순수 가상 함수들
     virtual bool CheckCollision(Collider* other) = 0;
     virtual Rect GetBounds() = 0;
+    virtual Vector2 GetSize() = 0;
     virtual Vector2 GetCenter() = 0;
 
     // 충돌 검사 모든 콜라이더와 체크
@@ -43,7 +45,27 @@ public:
     // 레이어 마스크 체크
     bool CanCollideWith(CollisionLayer otherLayer) const;
 
+public:
+    // 정적 함수들
+    static void RegisterCollider(Collider* collider);
+    static void UnregisterCollider(Collider* collider);
+    static const vector<Collider*>& GetAllColliders() { return s_AllColliders; }
+
+private:
+    void ProcessCollisionEvents();
+    void SyncWithOwnerTransform();
+    void RenderDebugInfo(HDC hdc);
+    void CheckCollisionWithAll();
+    Rect GetScreenBounds(Camera* camera);
+    bool IsVisibleOnScreen(Camera* camera, const Rect& screenBounds);
+    void RenderColliderBounds(HDC hdc, const Rect& screenBounds, Camera* camera);
+    void RenderCollisionState(HDC hdc, const Rect& screenBounds, Camera* camera);
+    void RenderTriggerState(HDC hdc, const Rect& screenBounds, Camera* camera);
+
 protected:
+    Vector2 m_Position;
+	float m_Rotation;
+	Vector2 m_Scale;
     Vector2 m_Offset;
     bool m_IsTrigger;
     bool m_Enabled;
@@ -61,20 +83,8 @@ protected:
     CollisionCallback m_OnTriggerEnter;
     CollisionCallback m_OnTriggerStay;
     CollisionCallback m_OnTriggerExit;
-
 private:
-    void ProcessCollisionEvents();
-    void RenderDebugInfo(HDC hdc);
-    void CheckCollisionWithAll();
-
     // 모든 활성 콜라이더들을 추적하는 정적 리스트
     static vector<Collider*> s_AllColliders;
-
     bool m_ShowDebug;
-
-public:
-    // 정적 함수들
-    static void RegisterCollider(Collider* collider);
-    static void UnregisterCollider(Collider* collider);
-    static const vector<Collider*>& GetAllColliders() { return s_AllColliders; }
 };

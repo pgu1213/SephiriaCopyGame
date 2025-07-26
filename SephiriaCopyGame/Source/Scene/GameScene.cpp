@@ -37,7 +37,11 @@ void GameScene::Init()
 	player->GetComponent<SpriteRenderer>()->SetSize(64.0f, 64.0f); // 플레이어 크기 설정
 	SetupPlayerAnimation(player);
     player->AddComponent<PlayerMovement>();
-	//player->AddComponent<BoxCollider>();
+	player->AddComponent<BoxCollider>();
+	player->GetComponent<BoxCollider>()->SetSize(Vector2(64.0f, 64.0f));
+	player->GetComponent<BoxCollider>()->SetLayer(CollisionLayer::Player);
+	player->GetComponent<BoxCollider>()->SetLayerMask(CollisionLayer::All);
+	player->GetComponent<BoxCollider>()->SetIsTrigger(false);
 
     Object* playerweapon = CreateGameObject("PlayerWeapon");
     playerweapon->AddComponent<SpriteRenderer>();
@@ -47,10 +51,15 @@ void GameScene::Init()
 
     //테스트용
     Object* cube = CreateGameObject("Cube");
+	cube->SetPosition(100.0f, 100.0f);
     cube->AddComponent<SpriteRenderer>();
     cube->GetComponent<SpriteRenderer>()->SetSprite(L"Duelist_Mole_Airborne00_0");
     cube->GetComponent<SpriteRenderer>()->SetSize(64.0f, 64.0f);
-    //cube->AddComponent<BoxCollider>();
+    cube->AddComponent<BoxCollider>();
+    cube->GetComponent<BoxCollider>()->SetSize(Vector2(64.0f, 64.0f));
+    cube->GetComponent<BoxCollider>()->SetLayer(CollisionLayer::Enemy);
+    cube->GetComponent<BoxCollider>()->SetLayerMask(CollisionLayer::All);
+    cube->GetComponent<BoxCollider>()->SetIsTrigger(false);
 
     // 카메라 설정
     cameraComponent->SetTarget(player);

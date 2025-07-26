@@ -1,6 +1,7 @@
 #include <pch.h>
-#include <functional>
 #include "Collider.h"
+#include <Engine/Managers/SceneManager/SceneManager.h>
+#include <Engine/Object/Component/Camera/Camera.h>
 
 vector<Collider*> Collider::s_AllColliders;
 
@@ -10,7 +11,8 @@ Collider::Collider(Object* owner)
     , m_IsTrigger(false)
     , m_Layer(CollisionLayer::None)
     , m_LayerMask(CollisionLayer::All)
-    , m_ShowDebug(false)
+	, m_Enabled(true)
+    , m_ShowDebug(true)
 {
     RegisterCollider(this);
 }
@@ -34,6 +36,8 @@ void Collider::Update(float DeltaTime)
 {
     if (!IsEnabled()) return;
 
+    SyncWithOwnerTransform();
+
     // 이전 프레임의 충돌 정보를 저장
     m_PreviousCollisions = m_CurrentCollisions;
     m_CurrentCollisions.clear();
@@ -45,7 +49,7 @@ void Collider::Update(float DeltaTime)
     ProcessCollisionEvents();
 }
 
-void Collider::Render(HDC hdc)  // override 키워드는 헤더에만
+void Collider::Render(HDC hdc)
 {
     if (m_ShowDebug)
     {
@@ -76,9 +80,19 @@ void Collider::ProcessCollisionEvents()
         {
             // 새로운 충돌
             if (m_IsTrigger)
-                m_OnTriggerEnter(collider);
+            {
+                if (m_OnTriggerEnter)
+                {
+                    m_OnTriggerEnter(collider);
+                }
+            }
             else
-                m_OnCollisionEnter(collider);
+            {
+                if (m_OnCollisionEnter)
+                {
+                    m_OnCollisionEnter(collider);
+                }
+            }
         }
     }
 
@@ -89,9 +103,19 @@ void Collider::ProcessCollisionEvents()
         {
             // 지속 중인 충돌
             if (m_IsTrigger)
-                m_OnTriggerStay(collider);
+            {
+                if (m_OnTriggerStay)
+                {
+                    m_OnTriggerStay(collider);
+                }
+            }
             else
-                m_OnCollisionStay(collider);
+            {
+                if (m_OnCollisionStay)
+                {
+                    m_OnCollisionStay(collider);
+                }
+            }
         }
     }
 
@@ -102,52 +126,62 @@ void Collider::ProcessCollisionEvents()
         {
             // 충돌 끝남
             if (m_IsTrigger)
-                m_OnTriggerExit(collider);
+            {
+                if (m_OnTriggerExit)
+                {
+                    m_OnTriggerExit(collider);
+                }
+            }
             else
-                m_OnCollisionExit(collider);
+            {
+                if (m_OnCollisionExit)
+                {
+                    m_OnCollisionExit(collider);
+                }
+            }
         }
+    }
+}
+
+void Collider::SyncWithOwnerTransform()
+{
+    if (m_pObjOwner)
+    {
+        auto ownerTransform = m_pObjOwner->GetTransform();
+
+        // 콜라이더의 위치를 오너의 위치로 업데이트
+        m_Position.x = static_cast<float>(ownerTransform.position.x);
+        m_Position.y = static_cast<float>(ownerTransform.position.y);
+
+        // 오프셋이 있다면 적용
+        m_Position.x += m_Offset.x;
+        m_Position.y += m_Offset.y;
+
+        // 회전도 동기화 (필요한 경우)
+        m_Rotation = ownerTransform.rotation;
+
+        // 스케일도 동기화 (필요한 경우)
+        m_Scale = ownerTransform.scale;
     }
 }
 
 void Collider::RenderDebugInfo(HDC hdc)
 {
-    Rect bounds = GetBounds();
+    if (!m_pObjOwner) return;
 
-    // 기본 콜라이더 경계 (빨간색)
-    HPEN pen = CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
-    HPEN oldPen = (HPEN)SelectObject(hdc, pen);
-    HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
+    // 카메라 가져오기
+    Scene* currentScene = SceneManager::GetInstance()->GetCurrentScene();
+    Object* cameraObject = currentScene->FindGameObject("MainCamera");
+    Camera* camera = cameraObject->GetComponent<Camera>();
 
-    Rectangle(hdc, bounds.X, bounds.Y,
-        bounds.X + bounds.Width, bounds.Y + bounds.Height);
+    if (!camera) return;
 
-    // 충돌 중인 경우 초록색으로 표시
-    if (!m_CurrentCollisions.empty())
-    {
-        HPEN collisionPen = CreatePen(PS_SOLID, 3, RGB(0, 255, 0));
-        SelectObject(hdc, collisionPen);
+    Rect bounds = GetScreenBounds(camera);
 
-        Rectangle(hdc, bounds.X - 2, bounds.Y - 2,
-            bounds.X + bounds.Width + 2, bounds.Y + bounds.Height + 2);
+    RenderColliderBounds(hdc, bounds, camera);
+    RenderCollisionState(hdc, bounds, camera);
+    RenderTriggerState(hdc, bounds, camera);
 
-        DeleteObject(collisionPen);
-    }
-
-    // 트리거인 경우 파란색 점선으로 표시
-    if (m_IsTrigger)
-    {
-        HPEN triggerPen = CreatePen(PS_DASH, 1, RGB(0, 0, 255));
-        SelectObject(hdc, triggerPen);
-
-        Rectangle(hdc, bounds.X, bounds.Y,
-            bounds.X + bounds.Width, bounds.Y + bounds.Height);
-
-        DeleteObject(triggerPen);
-    }
-
-    SelectObject(hdc, oldPen);
-    SelectObject(hdc, oldBrush);
-    DeleteObject(pen);
 }
 
 bool Collider::CanCollideWith(CollisionLayer otherLayer) const
@@ -167,5 +201,99 @@ void Collider::UnregisterCollider(Collider* collider)
     if (it != s_AllColliders.end())
     {
         s_AllColliders.erase(it);
+    }
+}
+
+Rect Collider::GetScreenBounds(Camera* camera)
+{
+    Vector2 size = GetSize(); // 각 콜라이더에서 구현
+
+    // 월드 좌표에서 화면 좌표로 변환
+    POINT topLeftScreen = camera->WorldToScreen(
+        m_Position.x - size.x * 0.5f,
+        m_Position.y - size.y * 0.5f
+    );
+
+    POINT bottomRightScreen = camera->WorldToScreen(
+        m_Position.x + size.x * 0.5f,
+        m_Position.y + size.y * 0.5f
+    );
+
+    return Rect(
+        topLeftScreen.x,
+        topLeftScreen.y,
+        bottomRightScreen.x - topLeftScreen.x,
+        bottomRightScreen.y - topLeftScreen.y
+    );
+}
+
+bool Collider::IsVisibleOnScreen(Camera* camera, const Rect& screenBounds)
+{
+    // 화면 크기 가져오기 (카메라나 윈도우에서)
+    RECT clientRect;
+    GetClientRect(GetActiveWindow(), &clientRect);
+
+    // 화면 영역과 겹치는지 확인
+    return !(screenBounds.X + screenBounds.Width < 0 ||
+        screenBounds.X > clientRect.right ||
+        screenBounds.Y + screenBounds.Height < 0 ||
+        screenBounds.Y > clientRect.bottom);
+}
+
+void Collider::RenderColliderBounds(HDC hdc, const Rect& screenBounds, Camera* camera)
+{
+    HPEN pen = CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
+    HPEN oldPen = (HPEN)SelectObject(hdc, pen);
+    HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
+
+    Rectangle(hdc,
+        screenBounds.X,
+        screenBounds.Y,
+        screenBounds.X + screenBounds.Width,
+        screenBounds.Y + screenBounds.Height);
+
+    SelectObject(hdc, oldPen);
+    SelectObject(hdc, oldBrush);
+    DeleteObject(pen);
+}
+
+void Collider::RenderCollisionState(HDC hdc, const Rect& screenBounds, Camera* camera)
+{
+    if (!m_CurrentCollisions.empty())
+    {
+        // 충돌 중인 경우 초록색 테두리
+        HPEN collisionPen = CreatePen(PS_SOLID, 3, RGB(0, 255, 0));
+        HPEN oldPen = (HPEN)SelectObject(hdc, collisionPen);
+        HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
+
+        Rectangle(hdc,
+            screenBounds.X - 2,
+            screenBounds.Y - 2,
+            screenBounds.X + screenBounds.Width + 2,
+            screenBounds.Y + screenBounds.Height + 2);
+
+        SelectObject(hdc, oldPen);
+        SelectObject(hdc, oldBrush);
+        DeleteObject(collisionPen);
+    }
+}
+
+void Collider::RenderTriggerState(HDC hdc, const Rect& screenBounds, Camera* camera)
+{
+    if (m_IsTrigger)
+    {
+        HPEN triggerPen = CreatePen(PS_DASH, 1, RGB(0, 0, 255));
+        HPEN oldPen = (HPEN)SelectObject(hdc, triggerPen);
+        HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
+
+        Rectangle(hdc,
+            screenBounds.X,
+            screenBounds.Y,
+            screenBounds.X + screenBounds.Width,
+            screenBounds.Y + screenBounds.Height);
+
+        SelectObject(hdc, oldPen);
+        SelectObject(hdc, oldBrush);
+        DeleteObject(triggerPen);
     }
 }
