@@ -27,9 +27,10 @@ public:
     void SetOwner(Object* newOwner);
 	void SetOwner(UI* newOwner);
     bool IsEnabled() const { return m_bisEnabled; }
-    Object* GetOwner() const { return m_pOwner; }
+    Object* GetObjOwner() const { return m_pObjOwner; }
+    UI* GetUIOwner() const { return m_pUIOwner; }
 protected:
-    Object* m_pOwner;
+    Object* m_pObjOwner;
 	UI* m_pUIOwner;
     bool m_bisEnabled;
 };

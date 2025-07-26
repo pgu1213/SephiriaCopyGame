@@ -1,42 +1,45 @@
 #pragma once
 #include <Engine/Object/Component/Component.h>
 
-class UIButtonComponent : public Component
+class UIButton : public Component
 {
 private:
-    std::function<void()> m_OnClick;
-    std::function<void()> m_OnHover;
-    std::function<void()> m_OnHoverExit;
-
     ButtonState m_CurrentState;
     ButtonState m_PreviousState;
-
-    std::string m_Text;
-    Color m_TextColor;
-    Color m_BackgroundColor;
-
     bool m_IsInteractable;
+    bool m_IsPressed;
+
+    // 텍스트 관련
+    string m_Text;
+    wstring m_FontName;
+    int m_FontSize;
+    bool m_IsBold;
+
+    // 색상 관련
+    COLORREF m_TextColor;
+    COLORREF m_NormalColor;
+    COLORREF m_HoverColor;
+    COLORREF m_PressedColor;
+    COLORREF m_DisabledColor;
 
 public:
-    explicit UIButtonComponent(UI* owner);
-    UIButtonComponent(const UIButtonComponent& other);
-
-    Component* CloneImpl() const override;
-
-    void Update(float deltaTime) override;
+    explicit UIButton(UI* owner);
+    UIButton(const UIButton& other);
+public:
+    void Init() override;
+    void Update(float DeltaTime) override;
     void Render(HDC hdc) override;
-
-    // 콜백 설정
-    void SetOnClick(std::function<void()> callback) { m_OnClick = callback; }
-    void SetOnHover(std::function<void()> callback) { m_OnHover = callback; }
-    void SetOnHoverExit(std::function<void()> callback) { m_OnHoverExit = callback; }
-
+    void OnDestroy() override;
+public:
     // 텍스트 설정
-    void SetText(const std::string& text) { m_Text = text; }
-    const std::string& GetText() const { return m_Text; }
+    void SetText(const string& text) { m_Text = text; }
+    const string& GetText() const { return m_Text; }
 
-    void SetTextColor(const Color& color) { m_TextColor = color; }
-    const Color& GetTextColor() const { return m_TextColor; }
+    void SetFont(const wstring& fontName, int fontSize, bool bold = false);
+    void SetTextColor(COLORREF color) { m_TextColor = color; }
+
+    // 색상 설정
+    void SetColors(COLORREF normal, COLORREF hover, COLORREF pressed, COLORREF disabled = RGB(128, 128, 128));
 
     // 상태 관리
     ButtonState GetState() const { return m_CurrentState; }
@@ -47,4 +50,5 @@ private:
     void UpdateButtonState();
     void HandleStateChange();
     bool IsMouseOverButton() const;
+    COLORREF GetCurrentColor() const;
 };

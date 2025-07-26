@@ -17,7 +17,7 @@ Animation::Animation(Object* owner)
 }
 
 Animation::Animation(const Animation& other)
-    : Component(other.m_pOwner)
+    : Component(other.m_pObjOwner)
     , m_pSpriteRenderer(other.m_pSpriteRenderer)
     , m_CurrentClipName(other.m_CurrentClipName)
     , m_CurrentFrameIndex(other.m_CurrentFrameIndex)
@@ -182,8 +182,8 @@ void Animation::UpdateCurrentFrame()
 
 SpriteRenderer* Animation::GetSpriteRenderer()
 {
-    if (!m_pOwner)
+    if (!m_pObjOwner)
         return nullptr;
 
-    return m_pOwner->GetComponent<SpriteRenderer>();
+    return m_pObjOwner->GetComponent<SpriteRenderer>();
 }

@@ -1,7 +1,7 @@
 #include <pch.h>
 #include "Component.h"
 
-Component::Component(Object* owner) : m_pOwner(owner), m_bisEnabled(true)
+Component::Component(Object* owner) : m_pObjOwner(owner), m_bisEnabled(true)
 {
 }
 
@@ -25,7 +25,7 @@ void Component::CopyFrom(const IPrototypeable* source)
     }
 }
 
-void Component::SetOwner(Object* newOwner) { m_pOwner = newOwner; }
+void Component::SetOwner(Object* newOwner) { m_pObjOwner = newOwner; }
 void Component::SetOwner(UI* newOwner) { m_pUIOwner = newOwner; }
 
 void Component::Init()

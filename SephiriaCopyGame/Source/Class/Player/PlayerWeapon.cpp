@@ -14,7 +14,7 @@ PlayerWeapon::PlayerWeapon(Object* owner)
 }
 
 PlayerWeapon::PlayerWeapon(const PlayerWeapon& other)
-    : Component(other.m_pOwner)
+    : Component(other.m_pObjOwner)
     , m_Position(other.m_Position)
     , m_Rotation(other.m_Rotation)
     , m_OffsetFromPlayer(other.m_OffsetFromPlayer)
@@ -84,5 +84,5 @@ void PlayerWeapon::UpdatePositionAroundPlayer(float playerX, float playerY)
     float rotatedOffsetX = m_OffsetFromPlayer.x * cosf(rotationInRadians) - m_OffsetFromPlayer.y * sinf(rotationInRadians);
     float rotatedOffsetY = m_OffsetFromPlayer.x * sinf(rotationInRadians) + m_OffsetFromPlayer.y * cosf(rotationInRadians);
 
-    m_pOwner->SetPosition(playerX + rotatedOffsetX, playerY + rotatedOffsetY);
+    m_pObjOwner->SetPosition(playerX + rotatedOffsetX, playerY + rotatedOffsetY);
 }

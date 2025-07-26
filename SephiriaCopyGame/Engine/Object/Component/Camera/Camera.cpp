@@ -32,7 +32,7 @@ Camera::Camera(Object* owner)
 }
 
 Camera::Camera(const Camera& other)
-    : Component(other.m_pOwner)
+    : Component(other.m_pObjOwner)
     , m_Position(other.m_Position)
     , m_Rotation(other.m_Rotation)
     , m_Zoom(other.m_Zoom)

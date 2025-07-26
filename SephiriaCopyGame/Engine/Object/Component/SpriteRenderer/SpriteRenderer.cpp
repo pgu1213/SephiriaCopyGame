@@ -33,7 +33,7 @@ SpriteRenderer::SpriteRenderer(Object* owner)
 
 // 복사 생성자  
 SpriteRenderer::SpriteRenderer(const SpriteRenderer& other)  
-    : Component(other.m_pOwner)  
+    : Component(other.m_pObjOwner)  
     , m_pSprite(other.m_pSprite)
     , m_Position(Vector2::Zero)
     , m_Size(other.m_Size)
@@ -230,10 +230,10 @@ void SpriteRenderer::RenderSprite(HDC hdc)
 
 void SpriteRenderer::ApplyTransformations(Gdiplus::Graphics& graphics)
 {
-    if (!m_pOwner) return;
+    if (!m_pObjOwner) return;
 
     // Object의 Transform 정보 가져오기
-    const Transform& transform = m_pOwner->GetTransform();
+    const Transform& transform = m_pObjOwner->GetTransform();
 
     // 변환 행렬 생성
     Gdiplus::Matrix matrix;
@@ -298,7 +298,7 @@ void SpriteRenderer::SetSpriteByName(const wstring& spriteName)
 
 Vector2 SpriteRenderer::GetWorldPosition() const
 {
-    if (GetOwner())
+    if (GetObjOwner())
     {
 
     }

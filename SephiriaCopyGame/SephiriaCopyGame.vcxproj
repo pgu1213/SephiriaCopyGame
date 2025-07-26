@@ -167,6 +167,9 @@
     <ClInclude Include="Engine\Managers\TimeManager\TimeManager.h" />
     <ClInclude Include="Source\Scene\TitleScene.h" />
     <ClInclude Include="Engine\Object\UI\UI.h" />
+    <ClInclude Include="Engine\Object\Component\UIButton\UIButton.h" />
+    <ClInclude Include="Engine\Object\Component\UIText\UIText.h" />
+    <ClInclude Include="Engine\Object\Component\UIImage\UIImage.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Class\Monster\Dynamite_Mole\DynamiteMoleAI.cpp" />
@@ -203,6 +206,9 @@
     <ClCompile Include="Engine\Scene\Scene.cpp" />
     <ClCompile Include="Source\Scene\TitleScene.cpp" />
     <ClCompile Include="Engine\Object\UI\UI.cpp" />
+    <ClCompile Include="Engine\Object\Component\UIButton\UIButton.cpp" />
+    <ClCompile Include="Engine\Object\Component\UIText\UIText.cpp" />
+    <ClCompile Include="Engine\Object\Component\UIImage\UIImage.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="SephiriaCopyGame.rc" />

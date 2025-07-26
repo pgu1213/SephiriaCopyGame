@@ -141,3 +141,123 @@ void UI::CloneChildren(const UI& other)
         m_Children.push_back(clonedChild.release());
     }
 }
+
+void UI::SetParent(UI* parent)
+{
+    if (m_pParent == parent) return;
+
+    if (m_pParent)
+    {
+        m_pParent->RemoveChild(this);
+    }
+
+    m_pParent = parent;
+
+    if (m_pParent)
+    {
+        m_pParent->AddChild(this);
+    }
+}
+
+void UI::AddChild(UI* child)
+{
+    if (!child || child == this) return;
+
+    auto it = find(m_Children.begin(), m_Children.end(), child);
+    if (it == m_Children.end())
+    {
+        m_Children.push_back(child);
+        child->m_pParent = this;
+    }
+}
+
+void UI::RemoveChild(UI* child)
+{
+    auto it = find(m_Children.begin(), m_Children.end(), child);
+    if (it != m_Children.end())
+    {
+        (*it)->m_pParent = nullptr;
+        m_Children.erase(it);
+    }
+}
+
+Vector2 UI::GetWorldPosition() const
+{
+    if (m_pParent)
+    {
+        return m_pParent->LocalToWorld(m_Transform.position);
+    }
+    return m_Transform.position;
+}
+
+Vector2 UI::LocalToWorld(const Vector2& localPos) const
+{
+    Vector2 worldPos = localPos;
+
+    // 스케일 적용
+    worldPos.x *= m_Transform.scale.x;
+    worldPos.y *= m_Transform.scale.y;
+
+    // 회전 적용
+    if (m_Transform.rotation != 0.0f)
+    {
+        float cos_r = cosf(m_Transform.rotation);
+        float sin_r = sinf(m_Transform.rotation);
+        float x = worldPos.x * cos_r - worldPos.y * sin_r;
+        float y = worldPos.x * sin_r + worldPos.y * cos_r;
+        worldPos.x = x;
+        worldPos.y = y;
+    }
+
+    // 위치 적용
+    worldPos += m_Transform.position;
+
+    // 부모가 있으면 부모의 변환 적용
+    if (m_pParent)
+    {
+        worldPos = m_pParent->LocalToWorld(worldPos);
+    }
+
+    return worldPos;
+}
+
+Vector2 UI::WorldToLocal(const Vector2& worldPos) const
+{
+    Vector2 localPos = worldPos;
+
+    // 부모가 있으면 먼저 부모의 역변환 적용
+    if (m_pParent)
+    {
+        localPos = m_pParent->WorldToLocal(localPos);
+    }
+
+    // 위치 역변환
+    localPos -= m_Transform.position;
+
+    // 회전 역변환
+    if (m_Transform.rotation != 0.0f)
+    {
+        float cos_r = cosf(-m_Transform.rotation);
+        float sin_r = sinf(-m_Transform.rotation);
+        float x = localPos.x * cos_r - localPos.y * sin_r;
+        float y = localPos.x * sin_r + localPos.y * cos_r;
+        localPos.x = x;
+        localPos.y = y;
+    }
+
+    // 스케일 역변환
+    localPos.x /= m_Transform.scale.x;
+    localPos.y /= m_Transform.scale.y;
+
+    return localPos;
+}
+
+bool UI::ContainsPoint(const Vector2& point) const
+{
+    Vector2 localPoint = WorldToLocal(point);
+
+    return localPoint.x >= -m_Size.x * 0.5f &&
+        localPoint.x <= m_Size.x * 0.5f &&
+        localPoint.y >= -m_Size.y * 0.5f &&
+        localPoint.y <= m_Size.y * 0.5f;
+}

@@ -20,7 +20,7 @@ PlayerMovement::PlayerMovement(Object* owner)
 }
 
 PlayerMovement::PlayerMovement(const PlayerMovement& other)
-    : Component(other.m_pOwner)
+    : Component(other.m_pObjOwner)
     , m_Speed(other.m_Speed)
     , m_Velocity(other.m_Velocity)
     , m_DashSpeed(other.m_DashSpeed)
@@ -40,7 +40,7 @@ Component* PlayerMovement::CloneImpl() const
 
 void PlayerMovement::Update(float deltaTime)
 {
-    if (!m_pOwner) return;
+    if (!m_pObjOwner) return;
 
     InputManager* input = InputManager::GetInstance();
 
@@ -68,11 +68,11 @@ void PlayerMovement::Update(float deltaTime)
             m_Velocity.y = m_DashDirection.y * m_DashSpeed;
 
             // 위치 업데이트
-            const Transform& currentTransform = m_pOwner->GetTransform();
+            const Transform& currentTransform = m_pObjOwner->GetTransform();
             Vector2 newPosition = currentTransform.position;
             newPosition.x += m_Velocity.x * deltaTime;
             newPosition.y += m_Velocity.y * deltaTime;
-            m_pOwner->SetPosition(newPosition);
+            m_pObjOwner->SetPosition(newPosition);
 
             return; // 대쉬 중에는 일반 이동 처리하지 않음
         }
@@ -112,7 +112,7 @@ void PlayerMovement::Update(float deltaTime)
         else
         {
             // 입력이 없으면 마지막으로 향했던 방향으로 대쉬 (기본값: 오른쪽)
-            SpriteRenderer* spriteRenderer = m_pOwner->GetComponent<SpriteRenderer>();
+            SpriteRenderer* spriteRenderer = m_pObjOwner->GetComponent<SpriteRenderer>();
             if (spriteRenderer && spriteRenderer->GetFlipX())
             {
                 m_DashDirection.x = -1.0f;
@@ -134,7 +134,7 @@ void PlayerMovement::Update(float deltaTime)
     // 스프라이트 반전 처리
     if (inputDir.x != 0.0f)
     {
-        SpriteRenderer* spriteRenderer = m_pOwner->GetComponent<SpriteRenderer>();
+        SpriteRenderer* spriteRenderer = m_pObjOwner->GetComponent<SpriteRenderer>();
         if (spriteRenderer)
         {
             spriteRenderer->SetFlipX(inputDir.x < 0.0f);
@@ -142,7 +142,7 @@ void PlayerMovement::Update(float deltaTime)
     }
 
     // 일반 이동 애니메이션
-    Animation* animation = m_pOwner->GetComponent<Animation>();
+    Animation* animation = m_pObjOwner->GetComponent<Animation>();
     if (animation)
     {
         if (inputDir.x != 0.0f || inputDir.y != 0.0f)
@@ -175,9 +175,9 @@ void PlayerMovement::Update(float deltaTime)
     m_Velocity.y = inputDir.y * m_Speed;
 
     // 위치 업데이트
-    const Transform& currentTransform = m_pOwner->GetTransform();
+    const Transform& currentTransform = m_pObjOwner->GetTransform();
     Vector2 newPosition = currentTransform.position;
     newPosition.x += m_Velocity.x * deltaTime;
     newPosition.y += m_Velocity.y * deltaTime;
-    m_pOwner->SetPosition(newPosition);
+    m_pObjOwner->SetPosition(newPosition);
 }

@@ -6,8 +6,8 @@ class Component;
 class UI : public IPrototypeable
 {
 public:
-    UI() : m_Name("Empty"), m_Tag(""), m_bisActive(true), m_pParent(nullptr) {}
-    explicit UI(const string& name) : m_Name(name), m_Tag(""), m_bisActive(true), m_pParent(nullptr) {}
+    UI() : m_Name("Empty"), m_Tag(""), m_bisActive(true), m_bisVisible(true), m_pParent(nullptr) {}
+    explicit UI(const string& name) : m_Name(name), m_Tag(""), m_bisActive(true), m_bisVisible(true), m_pParent(nullptr) {}
     UI(const UI& other);
 public:
     void Update(float DeltaTime);
@@ -29,6 +29,34 @@ public: // Get / Set
 
     bool IsVisible() const { return m_bisVisible; }
     void SetVisible(bool visible) { m_bisVisible = visible; }
+
+    // UI 계층 구조
+    UI* GetParent() const { return m_pParent; }
+    void SetParent(UI* parent);
+    void AddChild(UI* child);
+    void RemoveChild(UI* child);
+    const vector<UI*>& GetChildren() const { return m_Children; }
+
+    // UI 크기 관련
+    Vector2 GetSize() const { return m_Size; }
+    void SetSize(const Vector2& size) { m_Size = size; }
+    void SetSize(float width, float height) { m_Size = Vector2(width, height); }
+
+    // 월드/로컬 좌표 변환
+    Vector2 GetWorldPosition() const;
+    Vector2 LocalToWorld(const Vector2& localPos) const;
+    Vector2 WorldToLocal(const Vector2& worldPos) const;
+
+    // UI 충돌 검사
+    bool ContainsPoint(const Vector2& point) const;
+    bool ContainsPoint(float x, float y) const { return ContainsPoint(Vector2(x, y)); }
+
+    // 이벤트 콜백
+    function<void()> m_OnClick;
+    function<void()> m_OnHover;
+    function<void()> m_OnHoverExit;
+    function<void()> m_OnFocusGain;
+    function<void()> m_OnFocusLost;
 public:
     unique_ptr<IPrototypeable> Clone() const override; // 프로토타입 패턴 구현
     void CopyFrom(const IPrototypeable* source) override;
@@ -43,6 +71,7 @@ private:
     bool m_bisVisible;
     bool m_bisStarted = false;
     Transform m_Transform;
+    Vector2 m_Size = Vector2(100.0f, 100.0f);
     UI* m_pParent;
     vector<UI*> m_Children;
     vector<unique_ptr<Component>> m_Components;
