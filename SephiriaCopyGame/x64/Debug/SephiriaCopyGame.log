@@ -1,17 +1,5 @@
-﻿  SpriteRenderer.cpp
-C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\Component\SpriteRenderer\SpriteRenderer.cpp(183,34): warning C4244: '인수': 'double'에서 'Gdiplus::REAL'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  (소스 파일 '/Engine/Object/Component/SpriteRenderer/SpriteRenderer.cpp'을(를) 컴파일하는 중)
-  
-C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\Component\SpriteRenderer\SpriteRenderer.cpp(307,23): warning C4244: '인수': 'double'에서 'Gdiplus::REAL'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  (소스 파일 '/Engine/Object/Component/SpriteRenderer/SpriteRenderer.cpp'을(를) 컴파일하는 중)
-  
-C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\Component\SpriteRenderer\SpriteRenderer.cpp(313,23): warning C4244: '인수': 'double'에서 'Gdiplus::REAL'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  (소스 파일 '/Engine/Object/Component/SpriteRenderer/SpriteRenderer.cpp'을(를) 컴파일하는 중)
-  
-C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\Component\SpriteRenderer\SpriteRenderer.cpp(347,23): warning C4244: '인수': 'double'에서 'Gdiplus::REAL'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  (소스 파일 '/Engine/Object/Component/SpriteRenderer/SpriteRenderer.cpp'을(를) 컴파일하는 중)
-  
-C:\Dev\SephiriaCopyGame\SephiriaCopyGame\Engine\Object\Component\SpriteRenderer\SpriteRenderer.cpp(351,23): warning C4244: '인수': 'double'에서 'Gdiplus::REAL'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  (소스 파일 '/Engine/Object/Component/SpriteRenderer/SpriteRenderer.cpp'을(를) 컴파일하는 중)
-  
+﻿  CircleCollider.cpp
+  BoxCollider.cpp
+  GameScene.cpp
+  코드를 생성하고 있습니다...
   SephiriaCopyGame.vcxproj -> C:\Dev\SephiriaCopyGame\x64\Debug\SephiriaCopyGame.exe

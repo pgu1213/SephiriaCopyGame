@@ -22,19 +22,10 @@ public:
 private:
     void UpdateRotationToMouse();
     float CalculateAngleToMouse();
-
     void UpdatePositionAroundPlayer(float playerX, float playerY);
 
 private:
-    struct Vector2
-    {
-        float x, y;
-        Vector2() : x(0), y(0) {}
-        Vector2(float _x, float _y) : x(_x), y(_y) {}
-    };
-
     Vector2 m_Position;
     float m_Rotation;
-
     Vector2 m_OffsetFromPlayer;
 };

@@ -4,6 +4,8 @@
 #include <Engine/Object/Component/SpriteRenderer/SpriteRenderer.h>
 #include <Engine/Object/Component/Animation/Animation.h>
 #include <Engine/Object/Component/Camera/Camera.h>
+#include <Engine/Object/Component/Collider/BoxCollider.h>
+#include <Engine/Object/Component/Collider/CircleCollider.h>
 #include <Source/Class/Player/PlayerMovement.h>
 #include <Source/Class/Player/PlayerWeapon.h>
 
@@ -23,7 +25,7 @@ void GameScene::Init()
     // 카메라 생성
     Object* camera = CreateGameObject("MainCamera");
     Camera* cameraComponent = camera->AddComponent<Camera>();
-    cameraComponent->SetPosition(0.0f, 0.0f);  // 월드 좌표 (0,0)
+    cameraComponent->SetPosition(0.0f, 0.0f);
     cameraComponent->SetZoom(1.0f);
     cameraComponent->SetViewportSize(WINCX, WINCY);
     Camera::SetMainCamera(cameraComponent);
@@ -33,9 +35,9 @@ void GameScene::Init()
 	player->AddComponent<SpriteRenderer>();
 	player->GetComponent<SpriteRenderer>()->SetSprite(L"Player_Basic_Move_Lower00");
 	player->GetComponent<SpriteRenderer>()->SetSize(64.0f, 64.0f); // 플레이어 크기 설정
-    player->SetPosition(200.0f, 200.0f); // 플레이어 초기 위치 설정
 	SetupPlayerAnimation(player);
     player->AddComponent<PlayerMovement>();
+	//player->AddComponent<BoxCollider>();
 
     Object* playerweapon = CreateGameObject("PlayerWeapon");
     playerweapon->AddComponent<SpriteRenderer>();
@@ -48,6 +50,7 @@ void GameScene::Init()
     cube->AddComponent<SpriteRenderer>();
     cube->GetComponent<SpriteRenderer>()->SetSprite(L"Duelist_Mole_Airborne00_0");
     cube->GetComponent<SpriteRenderer>()->SetSize(64.0f, 64.0f);
+    //cube->AddComponent<BoxCollider>();
 
     // 카메라 설정
     cameraComponent->SetTarget(player);
