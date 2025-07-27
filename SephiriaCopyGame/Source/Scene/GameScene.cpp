@@ -12,6 +12,7 @@
 #include <Source/Class/Player/PlayerMovement.h>
 #include <Source/Class/Player/PlayerWeapon.h>
 #include <Source/Class/Player/PlayerFX.h>
+#include <Source/Class/Monster/Duelist_Mole/DuelistMoleAI.h>
 
 GameScene::GameScene()
 {
@@ -38,13 +39,13 @@ void GameScene::Init()
 	dungeon->AddComponent<DungeonGenerator>();
     dungeon->GetComponent<DungeonGenerator>()->SetTileSize(64.0f); // 타일 크기 설정
     dungeon->GetComponent<DungeonGenerator>()->LoadMapFromFile(L"Resource/MapFile/map_20250727_061249.txt"); // 맵 파일 로드
-	dungeon->GetComponent<DungeonGenerator>()->GenerateDungeon(); // 던전 생성
+	dungeon->GetComponent<DungeonGenerator>()->GenerateDungeon();
 
     // 무기 먼저 (플레이어 뒤에 만들어지라고)
     Object* playerweapon = CreateGameObject("PlayerWeapon");
     playerweapon->AddComponent<SpriteRenderer>();
     playerweapon->GetComponent<SpriteRenderer>()->SetSprite(L"Weapon_Sword0");
-    playerweapon->GetComponent<SpriteRenderer>()->SetSize(27.0f, 51.0f); // 플레이어 크기 설정
+    playerweapon->GetComponent<SpriteRenderer>()->SetSize(27.0f, 51.0f);
 	playerweapon->GetComponent<SpriteRenderer>()->SetAnchor(0.5f, 0.7f);
 
 	// 플레이어 생성
@@ -52,7 +53,7 @@ void GameScene::Init()
 	player->SetPosition(500.0f, 500.0f);
 	player->AddComponent<SpriteRenderer>();
 	player->GetComponent<SpriteRenderer>()->SetSprite(L"Player_Basic_Move_Lower00");
-	player->GetComponent<SpriteRenderer>()->SetSize(64.0f, 64.0f); // 플레이어 크기 설정
+	player->GetComponent<SpriteRenderer>()->SetSize(64.0f, 64.0f);
 	SetupPlayerAnimation(player);
     player->AddComponent<PlayerMovement>();
 	player->AddComponent<BoxCollider>();
@@ -68,10 +69,10 @@ void GameScene::Init()
     Object* playerFX = CreateGameObject("PlayerSwingFX");
     playerFX->AddComponent<SpriteRenderer>();
     playerFX->GetComponent<SpriteRenderer>()->SetSprite(L"Sword0_Swing0");
-    playerFX->GetComponent<SpriteRenderer>()->SetSize(64.0f, 64.0f);
+    playerFX->GetComponent<SpriteRenderer>()->SetSize(96.0f, 96.0f);
     playerFX->AddComponent<PlayerFX>();
 	playerFX->AddComponent<BoxCollider>();
-    playerFX->GetComponent<BoxCollider>()->SetSize(Vector2(64.0f, 64.0f));
+    playerFX->GetComponent<BoxCollider>()->SetSize(Vector2(96.0f, 96.0f));
 	playerFX->GetComponent<BoxCollider>()->SetLayer(CollisionLayer::Player);
 	playerFX->GetComponent<BoxCollider>()->SetLayerMask(CollisionLayer::All);
 	playerFX->GetComponent<BoxCollider>()->SetIsTrigger(true);
@@ -87,19 +88,27 @@ void GameScene::Init()
     SwingFX2.frames.push_back(AnimationFrame(L"Sword0_Swing2_1", 0.3f));
     SwingFXanim->AddClip(SwingFX2);
 
+    AnimationClip SwingFX3("SwingFX3", false);
+    SwingFX3.frames.push_back(AnimationFrame(L"Sword0_HeavySwingN_0", 0.1f));
+    SwingFX3.frames.push_back(AnimationFrame(L"Sword0_HeavySwingN_1", 0.2f));
+	SwingFX3.frames.push_back(AnimationFrame(L"Sword0_HeavySwingN_2", 0.2f));
+	SwingFX3.frames.push_back(AnimationFrame(L"Sword0_HeavySwingN_3", 0.2f));
+    SwingFXanim->AddClip(SwingFX3);
+
 	playerFX->SetActive(false);
 
     //테스트용
     Object* cube = CreateGameObject("Cube");
 	cube->SetPosition(100.0f, 100.0f);
     cube->AddComponent<SpriteRenderer>();
-    cube->GetComponent<SpriteRenderer>()->SetSprite(L"Duelist_Mole_Airborne00_0");
+    cube->GetComponent<SpriteRenderer>()->SetSprite(L"Duelist_Mole_Idle00_0");
     cube->GetComponent<SpriteRenderer>()->SetSize(64.0f, 64.0f);
     cube->AddComponent<BoxCollider>();
     cube->GetComponent<BoxCollider>()->SetSize(Vector2(64.0f, 64.0f));
     cube->GetComponent<BoxCollider>()->SetLayer(CollisionLayer::Enemy);
     cube->GetComponent<BoxCollider>()->SetLayerMask(CollisionLayer::All);
     cube->GetComponent<BoxCollider>()->SetIsTrigger(false);
+    cube->AddComponent<DuelistMoleAI>();
 
     // 카메라 설정
     cameraComponent->SetTarget(player);
@@ -135,3 +144,4 @@ void GameScene::SetupPlayerAnimation(Object* player)
 
     animation->PlayClip("LowerWalk");
 }
+

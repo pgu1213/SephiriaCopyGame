@@ -2,9 +2,63 @@
 #include "CircleCollider.h"
 #include "BoxCollider.h"
 
-CircleCollider::CircleCollider(Object* owner, float radius)
-    : Collider(owner), m_Radius(radius)
+CircleCollider::CircleCollider(Object* owner)
+    : Collider(owner)
+    , m_Radius(0.f)
 {
+}
+
+CircleCollider::CircleCollider(const CircleCollider& other)
+    : Collider(other)
+    , m_Radius(other.m_Radius)
+{
+}
+
+Component* CircleCollider::CloneImpl() const
+{
+    return new CircleCollider(*this);
+}
+
+void CircleCollider::CopyFrom(const IPrototypeable* source)
+{
+    Component::CopyFrom(source);
+    const CircleCollider* sourceCollider = dynamic_cast<const CircleCollider*>(source);
+    if (sourceCollider)
+    {
+        m_Radius = sourceCollider->m_Radius;
+        m_Offset = sourceCollider->m_Offset;
+        m_IsTrigger = sourceCollider->m_IsTrigger;
+        m_Layer = sourceCollider->m_Layer;
+        m_LayerMask = sourceCollider->m_LayerMask;
+        m_Enabled = sourceCollider->m_Enabled;
+        // 이벤트 콜백 복사
+        m_OnCollisionEnter = sourceCollider->m_OnCollisionEnter;
+        m_OnCollisionStay = sourceCollider->m_OnCollisionStay;
+        m_OnCollisionExit = sourceCollider->m_OnCollisionExit;
+        m_OnTriggerEnter = sourceCollider->m_OnTriggerEnter;
+        m_OnTriggerStay = sourceCollider->m_OnTriggerStay;
+        m_OnTriggerExit = sourceCollider->m_OnTriggerExit;
+	}
+}
+
+void CircleCollider::Init()
+{
+    Collider::Init();
+}
+
+void CircleCollider::Update(float deltaTime)
+{
+    Collider::Update(deltaTime);
+}
+
+void CircleCollider::Render(HDC hdc)
+{
+    Collider::Render(hdc);
+}
+
+void CircleCollider::OnDestroy()
+{
+    Collider::OnDestroy();
 }
 
 bool CircleCollider::CheckCollision(Collider* other)

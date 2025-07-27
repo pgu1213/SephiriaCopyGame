@@ -448,6 +448,7 @@ void DungeonGenerator::ApplyColliders()
                             BoxCollider* boxCollider = tileObj.tileObject->AddComponent<BoxCollider>();
 							Vector2 colliderSize(m_tileSize, m_tileSize);
                             boxCollider->SetSize(colliderSize);
+                            //boxCollider->SetLayer(CollisionLayer::Wall);
 
                             tileObj.boxCollider = boxCollider;
                             tileObj.hasCollider = true;

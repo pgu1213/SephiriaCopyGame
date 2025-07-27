@@ -21,6 +21,7 @@
 #include <memory>
 #include <typeindex>
 #include <functional>
+#include <cmath>
 #include <set>
 
 #include <ole2.h>
